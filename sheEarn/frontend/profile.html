@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile – SheEarn</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .profile-hero {
+      background: linear-gradient(135deg, var(--bg-surface), var(--bg-elevated));
+      border-bottom: 1px solid var(--border); padding: 40px 24px;
+    }
+    .profile-hero-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: flex-start; gap: 28px; flex-wrap: wrap; }
+    .profile-img-wrap { position: relative; cursor: pointer; }
+    .profile-img-wrap:hover .img-overlay { opacity: 1; }
+    .img-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,.6);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: var(--transition); font-size: 1.4rem;
+    }
+    .skills-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+    .skill-tag {
+      background: rgba(168,85,247,.12); border: 1px solid var(--border-strong);
+      border-radius: 99px; padding: 4px 14px; font-size: .83rem; font-weight: 600;
+      color: var(--primary); display: flex; align-items: center; gap: 6px;
+    }
+    .skill-tag .remove { cursor: pointer; opacity: .6; }
+    .skill-tag .remove:hover { opacity: 1; color: var(--danger); }
+    .service-manage-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; display: flex; align-items: center; gap: 14px; transition: var(--transition);
+    }
+    .service-manage-card:hover { border-color: var(--border-strong); }
+    .svc-emoji-sm { width: 48px; height: 48px; border-radius: var(--radius-sm); background: linear-gradient(135deg, #1a0a2e, #2d0a4e); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+    .profile-content { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+  </style>
+</head>
+<body>
+  <header class="navbar" id="navbar"></header>
+  <div class="page-content">
+
+    <!-- Profile Hero -->
+    <div class="profile-hero">
+      <div class="profile-hero-inner">
+        <div class="profile-img-wrap" style="text-align: center;">
+          <div id="avatar-wrapper" style="position: relative; display: inline-block; cursor: pointer;" onclick="document.getElementById('img-upload').click()">
+            <div class="avatar avatar-xl" id="profile-avatar" style="margin: 0 auto;"></div>
+            <div class="img-overlay private-only">📷</div>
+            <input type="file" id="img-upload" accept="image/*" class="hidden" onchange="uploadImage(this)">
+          </div>
+          <div style="margin-top: 8px;">
+            <button id="del-img-btn" class="btn btn-sm" style="color: var(--danger); background: transparent; padding: 4px; font-size: 0.8rem; display: none;" onclick="removeProfileImage()">🗑️ Delete Picture</button>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div id="profile-badge" class="badge badge-primary" style="margin-bottom:8px"></div>
+          <h1 id="profile-name" style="margin-bottom:4px"></h1>
+          <p id="profile-location" class="text-muted" style="margin-bottom:4px"></p>
+
+          <div class="skills-wrap" id="skills-display"></div>
+          <div class="mt private-only" style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="openModal('edit-modal')">✏️ Edit Profile</button>
+            <a href="wallet.html" class="btn btn-secondary btn-sm">💰 My Wallet</a>
+          </div>
+        </div>
+        <div style="text-align:right" class="private-only" id="wallet-card-wrap">
+          <div class="stat-card" style="min-width:160px">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value gradient-text" id="wallet-balance">₹—</div>
+            <div class="stat-label">Wallet Balance</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-content" id="tabs-container">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-services" onclick="switchProfileTab(this)">My Services</button>
+        <button class="tab-btn private-only" data-tab="tab-settings" onclick="switchProfileTab(this)">Settings</button>
+      </div>
+
+      <!-- Services Tab -->
+      <div id="tab-services">
+        <div class="flex-between mb">
+          <h3 id="services-title">My Services</h3>
+          <button class="btn btn-primary btn-sm private-only" onclick="openModal('new-service-modal')">+ Add Service</button>
+        </div>
+        <div id="my-services-list" style="display:flex;flex-direction:column;gap:12px">
+          <div class="flex-center" style="padding:40px"><div class="loader"></div></div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="tab-settings" class="hidden">
+        <div class="card" style="max-width:480px">
+          <h3 class="mb">Change Password</h3>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input class="form-input" id="old-pw" type="password" placeholder="Current password">
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input class="form-input" id="new-pw" type="password" placeholder="Min 6 characters">
+            </div>
+            <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Edit Profile</div>
+        <button class="modal-close" onclick="closeModal('edit-modal')">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="edit-name" type="text"></div>
+        <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="edit-location" placeholder="e.g. Bengaluru, Karnataka"></div>
+        <div class="form-group"><label class="form-label">Bio / Description</label><textarea class="form-textarea" id="edit-desc" placeholder="Tell customers about yourself…"></textarea></div>
+        <div class="form-group">
+          <label class="form-label">Skills (press Enter to add)</label>
+          <input class="form-input" id="edit-skill-input" placeholder="e.g. Embroidery" onkeydown="if(event.key==='Enter'){event.preventDefault();addSkill()}">
+          <div class="skills-wrap mt-sm" id="edit-skills-display"></div>
+        </div>
+
+        <div class="form-group"><label class="form-label">Language</label>
+          <select class="form-select" id="edit-lang"><option value="en">English</option><option value="kn">Kannada</option><option value="hi">Hindi</option></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-primary" onclick="saveProfile()" style="flex:1">Save Changes</button>
+          <button class="btn btn-secondary btn-sm" onclick="useGeo()">📍 Use GPS</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Service Modal -->
+  <div class="modal-overlay" id="new-service-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Add New Service</div>
+        <button class="modal-close" onclick="closeModal('new-service-modal')">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="form-group"><label class="form-label">Service Title</label><input class="form-input" id="ns-title" placeholder="e.g. Custom Blouse Stitching"></div>
+        <div class="form-group"><label class="form-label">Category</label>
+          <select class="form-select" id="ns-cat">
+            <option value="cooking">🍳 Cooking</option>
+            <option value="stitching">🧵 Stitching</option>
+            <option value="tutoring">📚 Tutoring</option>
+            <option value="handmade_crafts">🎨 Handmade Crafts</option>
+            <option value="beauty">💄 Beauty</option>
+            <option value="cleaning">🧹 Cleaning</option>
+            <option value="other">✨ Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Price (₹)</label><input class="form-input" id="ns-price" type="number" min="0" placeholder="350"></div>
+        <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="ns-desc" placeholder="Describe your service…"></textarea></div>
+        <div class="form-group"><label class="form-label">Product/Service Photo</label><input type="file" id="ns-image" class="form-input" accept="image/*"></div>
+        <button class="btn btn-primary" onclick="createService()">Create Service</button>
+        <p class="text-muted" style="font-size:.8rem;text-align:center">Services go live after admin approval (usually within 24 hours)</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!Auth.requireAuth()) throw '';
+    buildNavbar('');
+
+    // Check if viewing another user's profile
+    const viewId = new URLSearchParams(location.search).get('id');
+    let selfUser = Auth.getUser();
+    let editSkills = [];
+
+    function switchProfileTab(btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-services').classList.toggle('hidden', btn.dataset.tab !== 'tab-services');
+      document.getElementById('tab-settings').classList.toggle('hidden', btn.dataset.tab !== 'tab-settings');
+    }
+
+    async function loadProfile() {
+      try {
+        let user, profile;
+        if (viewId && viewId !== String(selfUser.id)) {
+          const res = await api.getPublicProfile(viewId);
+          user = res.data; profile = user.profile;
+          // Hide edit controls for other profiles
+          document.querySelectorAll('.private-only').forEach(el => el.style.display = 'none');
+          document.getElementById('services-title').textContent = `${user.name}'s Services`;
+          const aw = document.getElementById('avatar-wrapper');
+          if (aw) { aw.onclick = null; aw.style.cursor = 'default'; }
+        } else {
+          const res = await api.getProfile();
+          user = res.data; profile = user.profile;
+          if (user.role === 'provider') {
+            const walletRes = await api.getWallet();
+            document.getElementById('wallet-balance').textContent = `₹${walletRes.data.balance}`;
+          } else {
+            const wc = document.getElementById('wallet-card-wrap');
+            if (wc) wc.style.display = 'none';
+            const wb = document.querySelector('a[href="wallet.html"]');
+            if (wb) wb.style.display = 'none';
+          }
+        }
+
+        // Avatar
+        const av = document.getElementById('profile-avatar');
+        const delBtn = document.getElementById('del-img-btn');
+        if (profile?.profile_image) { 
+          av.innerHTML = `<img src="${profile.profile_image}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; 
+          if (!viewId || viewId === String(selfUser.id)) delBtn.style.display = 'inline-block';
+        }
+        else { 
+          av.textContent = (user.name||'?').slice(0,2).toUpperCase(); 
+          delBtn.style.display = 'none';
+        }
+
+        document.getElementById('profile-name').textContent = user.name;
+        document.getElementById('profile-badge').textContent = { provider: '🚀 Provider', customer: '🛒 Customer', admin: '🛠️ Admin' }[user.role] || user.role;
+        document.getElementById('profile-location').textContent = profile?.location ? `📍 ${profile.location}` : 'Location not set';
+
+
+        const skills = profile?.skills || [];
+        document.getElementById('skills-display').innerHTML = skills.map(s => `<span class="badge badge-primary">${s}</span>`).join('');
+
+        // Pre-fill edit modal
+        document.getElementById('edit-name').value = user.name;
+        document.getElementById('edit-location').value = profile?.location || '';
+        document.getElementById('edit-desc').value = profile?.description || '';
+        document.getElementById('edit-lang').value = user.language || 'en';
+
+        editSkills = [...skills]; renderEditSkills();
+
+        // Load services
+        if (user.role === 'provider' || (viewId && user.services)) {
+          loadMyServices(viewId ? user.services : null);
+        } else {
+          document.getElementById('my-services-list').innerHTML = '<p class="text-muted">Switch to a provider account to list services.</p>';
+        }
+      } catch(err) { showToast(err.message, 'error'); }
+    }
+
+    async function loadMyServices(preloaded) {
+      const el = document.getElementById('my-services-list');
+      const services = preloaded || (await api.myServices()).data;
+      const isOwner = !viewId || viewId === String(selfUser.id);
+      
+      if (!services.length) {
+        if (isOwner) {
+          el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>No services yet</h3><p>Add your first service to start earning!</p></div>`;
+        } else {
+          el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>No services yet</h3><p>This provider hasn't listed any services.</p></div>`;
+        }
+        return;
+      }
+      el.innerHTML = services.map(s => `
+        <div class="service-manage-card">
+          <div class="svc-emoji-sm">${CATEGORY_EMOJI[s.category]||'✨'}</div>
+          <div style="flex:1">
+            <div style="font-weight:700">${s.title}</div>
+            <div style="font-size:.82rem;color:var(--text-muted)">${CATEGORY_LABEL[s.category]} • ₹${s.price}</div>
+            ${isOwner ? `
+            <div class="mt-sm">
+              <span class="badge ${s.is_approved ? 'badge-success' : 'badge-warning'}">${s.is_approved ? '✓ Approved' : '⏳ Pending'}</span>
+              <span class="badge ${s.is_active ? 'badge-info' : 'badge-muted'}" style="margin-left:4px">${s.is_active ? 'Active' : 'Inactive'}</span>
+            </div>
+            ` : ''}
+          </div>
+          <div style="display:flex;gap:8px">
+            <a href="service.html?id=${s.id}" class="btn btn-secondary btn-sm">View</a>
+            ${isOwner ? `<button class="btn btn-danger btn-sm" onclick="deleteServiceAction(${s.id})">Delete</button>` : ''}
+          </div>
+        </div>`).join('');
+    }
+
+    async function deleteServiceAction(id) {
+      if (!confirm('Are you sure you want to delete this service?')) return;
+      showLoader('Deleting...');
+      try { await api.deleteService(id); showToast('Service deleted','success'); loadMyServices(null); }
+      catch(err) { showToast(err.message,'error'); }
+      finally { hideLoader(); }
+    }
+
+    // Edit skills
+    function addSkill() {
+      const inp = document.getElementById('edit-skill-input');
+      const v = inp.value.trim();
+      if (v && !editSkills.includes(v)) { editSkills.push(v); renderEditSkills(); }
+      inp.value = '';
+    }
+    function removeSkill(sk) { editSkills = editSkills.filter(s => s !== sk); renderEditSkills(); }
+    function renderEditSkills() {
+      const wrap = document.getElementById('edit-skills-display');
+      wrap.innerHTML = editSkills.map((s, i) =>
+        `<div class="skill-tag">${s}<span class="remove" data-idx="${i}">✕</span></div>`).join('');
+      wrap.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', () => removeSkill(editSkills[+btn.dataset.idx]));
+      });
+    }
+
+    async function saveProfile() {
+      try {
+        const lat = parseFloat(document.getElementById('edit-location').dataset.lat || 0);
+        const lon = parseFloat(document.getElementById('edit-location').dataset.lon || 0);
+        const newLang = document.getElementById('edit-lang').value;
+        await api.updateProfile({
+          name: document.getElementById('edit-name').value,
+          location: document.getElementById('edit-location').value,
+          description: document.getElementById('edit-desc').value,
+          language: newLang,
+
+          skills: editSkills,
+          ...(lat && lon ? { latitude: lat, longitude: lon } : {}),
+        });
+        showToast('Profile updated!', 'success');
+        closeModal('edit-modal');
+        
+        // Apply new language
+        let userLocal = Auth.getUser();
+        if (userLocal) {
+           userLocal.language = newLang;
+           Auth.setUser(userLocal);
+           localStorage.setItem('she_lang', newLang);
+        }
+        
+        const currentCookieMatch = document.cookie.match(/(^|;\s*)googtrans=([^;]*)/);
+        const currentCookie = currentCookieMatch ? currentCookieMatch[2] : null;
+        const desiredCookie = newLang === 'en' ? '/en/en' : `/en/${newLang}`;
+        
+        if (currentCookie !== desiredCookie) {
+           window.location.reload();
+        } else {
+           loadProfile();
+        }
+      } catch(err) { showToast(err.message, 'error'); }
+    }
+
+    function useGeo() {
+      navigator.geolocation?.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const inp = document.getElementById('edit-location');
+        inp.dataset.lat = lat;
+        inp.dataset.lon = lon;
+        
+        showLoader('Locating...');
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            inp.value = data.display_name;
+          } else {
+            if (!inp.value) inp.value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          }
+          showToast('GPS location captured!', 'success');
+        } catch(e) {
+          if (!inp.value) inp.value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          showToast('GPS location captured!', 'success');
+        } finally {
+          hideLoader();
+        }
+      });
+    }
+
+    async function uploadImage(input) {
+      if (!input.files[0]) return;
+      showLoader('Uploading image…');
+      try {
+        const res = await api.uploadProfileImage(input.files[0]);
+        showToast('Profile image updated!', 'success');
+        loadProfile();
+      } catch(err) { showToast(err.message, 'error'); }
+      finally { hideLoader(); }
+    }
+
+    async function removeProfileImage() {
+      if (!confirm("Are you sure you want to delete your profile picture?")) return;
+      showLoader('Removing image...');
+      try {
+        await api.removeProfileImage();
+        showToast('Profile image removed!', 'success');
+        loadProfile();
+      } catch(err) {
+        showToast(err.message, 'error');
+      } finally {
+        hideLoader();
+      }
+    }
+
+    async function createService() {
+      const title = document.getElementById('ns-title').value.trim();
+      const price = parseFloat(document.getElementById('ns-price').value);
+      if (!title || isNaN(price)) { showToast('Title and price are required', 'error'); return; }
+      try {
+        const imgFile = document.getElementById('ns-image').files[0];
+        const fd = new FormData();
+        fd.append('title', title);
+        fd.append('category', document.getElementById('ns-cat').value);
+        fd.append('price', price);
+        fd.append('description', document.getElementById('ns-desc').value);
+        if (imgFile) fd.append('image', imgFile);
+
+        await api.createService(fd);
+        showToast('Service created!', 'success');
+        closeModal('new-service-modal');
+        loadMyServices(null);
+      } catch(err) { showToast(err.message, 'error'); }
+    }
+
+    async function changePassword() {
+      const oldPw = document.getElementById('old-pw').value;
+      const newPw = document.getElementById('new-pw').value;
+      if (!oldPw || !newPw) { showToast('Both fields required', 'error'); return; }
+      try {
+        await api.changePassword({ old_password: oldPw, new_password: newPw });
+        showToast('Password changed!', 'success');
+        document.getElementById('old-pw').value = '';
+        document.getElementById('new-pw').value = '';
+      } catch(err) { showToast(err.message, 'error'); }
+    }
+
+    closeModalOnOverlay('edit-modal');
+    closeModalOnOverlay('new-service-modal');
+    loadProfile();
+  </script>
+</body>
+</html>

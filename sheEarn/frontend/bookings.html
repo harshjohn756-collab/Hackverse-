@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookings – SheEarn</title>
+  <link rel="stylesheet" href="css/main.css">
+  <!-- QR Code generator (lightweight, no server needed) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <style>
+    .booking-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; transition: var(--transition);
+    }
+    .booking-card:hover { border-color: var(--border-strong); }
+    .booking-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .booking-svc-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+    .booking-meta { font-size: .82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; }
+    .booking-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+    /* Tracker Styles */
+    .tracker-item { display: flex; gap: 16px; position: relative; padding-bottom: 28px; }
+    .tracker-item:last-child { padding-bottom: 0; }
+    .tracker-line { position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: var(--border-strong); }
+    .tracker-item.completed .tracker-line { background: var(--primary); }
+    .tracker-item:last-child .tracker-line { display: none; }
+    .tracker-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-card); border: 2px solid var(--border-strong); display: flex; align-items: center; justify-content: center; z-index: 1; font-size: 1rem; color: var(--text-muted); transition: 0.3s; }
+    .tracker-item.completed .tracker-icon { background: var(--primary); border-color: var(--primary); color: white; }
+    .tracker-item.current .tracker-icon { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px rgba(110, 56, 230, 0.2); }
+    .tracker-content { flex: 1; padding-top: 4px; }
+    .tracker-title { font-weight: 600; font-size: 1.05rem; color: var(--text-muted); }
+    .tracker-item.completed .tracker-title { color: var(--text-primary); }
+    .tracker-item.current .tracker-title { color: var(--primary); font-weight: 700; }
+    .tracker-desc { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Payment Modal Styles ── */
+    .pay-header {
+      text-align: center; padding: 24px 20px 16px;
+      background: linear-gradient(135deg, #6E38E6 0%, #9B59B6 50%, #E91E63 100%);
+      border-radius: var(--radius) var(--radius) 0 0; margin: -24px -24px 20px;
+    }
+    .pay-amount { font-size: 2.8rem; font-weight: 900; color: #fff; letter-spacing: -1px; }
+    .pay-subtitle { color: rgba(255,255,255,.8); font-size: .85rem; margin-top: 4px; }
+    .pay-qr-wrap {
+      background: #fff; border-radius: 16px; padding: 16px; margin: 0 auto 20px;
+      width: fit-content; box-shadow: 0 4px 24px rgba(0,0,0,.15);
+    }
+    .pay-qr-wrap img, .pay-qr-wrap canvas { display: block; }
+    .pay-upi-id {
+      background: var(--bg-elevated); border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-sm); padding: 12px 16px; text-align: center;
+      font-size: .95rem; font-weight: 600; margin-bottom: 16px; cursor: pointer;
+      transition: var(--transition); position: relative;
+    }
+    .pay-upi-id:hover { border-color: var(--primary); background: rgba(110,56,230,.05); }
+    .pay-upi-id .copy-hint {
+      font-size: .7rem; color: var(--text-muted); font-weight: 400;
+      display: block; margin-top: 2px;
+    }
+    .pay-methods {
+      display: flex; gap: 8px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap;
+    }
+    .pay-method-btn {
+      display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+      border-radius: var(--radius-sm); border: 2px solid var(--border);
+      background: var(--bg-card); cursor: pointer; transition: var(--transition);
+      font-size: .9rem; font-weight: 600; color: var(--text-primary);
+    }
+    .pay-method-btn:hover, .pay-method-btn.active {
+      border-color: var(--primary); background: rgba(110,56,230,.08);
+    }
+    .pay-method-btn .pm-icon { font-size: 1.3rem; }
+    .pay-divider {
+      display: flex; align-items: center; gap: 12px; margin: 20px 0;
+      color: var(--text-muted); font-size: .8rem;
+    }
+    .pay-divider::before, .pay-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .pay-steps {
+      background: var(--bg-elevated); border-radius: var(--radius-sm);
+      padding: 16px; margin-bottom: 20px;
+    }
+    .pay-step {
+      display: flex; align-items: flex-start; gap: 12px; padding: 6px 0;
+      font-size: .88rem; color: var(--text-muted);
+    }
+    .pay-step-num {
+      background: var(--primary); color: #fff; width: 22px; height: 22px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 800; flex-shrink: 0;
+    }
+    .pay-ref-input {
+      width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--bg-elevated);
+      color: var(--text-primary); font-size: .9rem; margin-bottom: 16px;
+    }
+    .pay-ref-input:focus { border-color: var(--primary); outline: none; }
+    .pay-success-anim {
+      text-align: center; padding: 30px 20px;
+    }
+    .pay-success-check {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, #10B981, #059669);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; font-size: 2.5rem; color: #fff;
+      animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); }
+    }
+    .pay-success-amount { font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
+    .pay-success-detail { color: var(--text-muted); font-size: .85rem; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <header class="navbar" id="navbar"></header>
+  <div class="page-content">
+    <div style="max-width:900px;margin:0 auto;padding:32px 24px">
+      <div class="flex-between mb-lg">
+        <div>
+          <h1>My Bookings</h1>
+          <p class="text-muted">Track and manage your service bookings</p>
+        </div>
+        <a href="browse.html" class="btn btn-primary">+ New Booking</a>
+      </div>
+
+      <!-- Status Tabs -->
+      <div class="tabs" id="status-tabs">
+        <button class="tab-btn active" data-status="" onclick="selectStatus(this,'')">All</button>
+        <button class="tab-btn" data-status="pending" onclick="selectStatus(this,'pending')">⏳ Pending</button>
+        <button class="tab-btn" data-status="active" onclick="selectStatus(this,'active')">🚀 Active</button>
+        <button class="tab-btn" data-status="completed" onclick="selectStatus(this,'completed')">🎉 Completed</button>
+        <button class="tab-btn" data-status="cancelled" onclick="selectStatus(this,'cancelled')">❌ Cancelled</button>
+      </div>
+
+      <div id="bookings-list" style="display:flex;flex-direction:column;gap:14px">
+        <div class="flex-center" style="padding:60px"><div class="loader"></div></div>
+      </div>
+      <div id="pagination" class="pagination"></div>
+    </div>
+  </div>
+
+  <!-- ═══ Payment Modal ═══ -->
+  <div class="modal-overlay" id="pay-modal">
+    <div class="modal" style="max-width:440px">
+      <!-- Filled dynamically -->
+      <div id="pay-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══ Tracker Modal ═══ -->
+  <div class="modal-overlay" id="tracker-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🚚 Order Tracker</div>
+        <button class="modal-close" onclick="closeModal('tracker-modal')">✕</button>
+      </div>
+      <div style="margin-bottom:20px;text-align:center;font-size:0.9rem;color:var(--text-muted)">
+        Booking #<span id="tracker-booking-id"></span>
+      </div>
+      <div id="tracker-container" style="padding: 10px 20px;"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!Auth.requireAuth()) throw '';
+    buildNavbar('bookings');
+
+    const user = Auth.getUser();
+    let currentStatus = '';
+    let currentPage = 1;
+    let currentPaymentData = null;
+
+    function selectStatus(btn, status) {
+      document.querySelectorAll('#status-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStatus = status;
+      loadBookings(1);
+    }
+
+    async function loadBookings(page = 1) {
+      currentPage = page;
+      const el = document.getElementById('bookings-list');
+      el.innerHTML = '<div class="flex-center" style="padding:60px"><div class="loader"></div></div>';
+
+      try {
+        const params = { page, per_page: 8 };
+        if (currentStatus) params.status = currentStatus;
+        const res = await api.listBookings(params);
+        const { items, pages, total } = res.data;
+        window.currentBookings = items;
+
+        if (!items.length) {
+          el.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><h3>No bookings found</h3><p>${currentStatus ? `No ${currentStatus} bookings` : 'You have no bookings yet'}</p>${!currentStatus ? '<a href="browse.html" class="btn btn-primary mt">Browse Services</a>' : ''}</div>`;
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        el.innerHTML = items.map(b => bookingCard(b)).join('');
+        buildPagination('pagination', page, pages, loadBookings);
+      } catch(err) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>${err.message}</h3></div>`;
+      }
+    }
+
+    function bookingCard(b) {
+      const isProvider = user.role === 'provider';
+      const svc = b.service || {};
+      const other = isProvider ? b.customer : b.provider;
+      const emoji = CATEGORY_EMOJI[svc.category] || '✨';
+      const statusBadge = `<span class="badge ${STATUS_BADGE[b.status] || 'badge-muted'}">${b.status}</span>`;
+
+      let actions = '';
+      if (isProvider && b.status === 'pending') {
+        actions += `<button class="btn btn-success btn-sm" onclick="doAction(${b.id},'accept')">✅ Accept</button>
+                    <button class="btn btn-danger btn-sm" onclick="doAction(${b.id},'reject')">❌ Reject</button>`;
+      }
+      if (isProvider && ['accepted', 'confirmed', 'packed', 'out_for_delivery'].includes(b.status)) {
+        actions += `
+          <select class="form-input" style="width:auto;padding:6px;font-size:.85rem;margin-right:8px;background-color:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);" onchange="updateTrackingStatus(${b.id}, this.value)">
+            <option value="" disabled selected>Update Status...</option>
+            <option value="confirmed" ${b.status==='confirmed'?'disabled':''}>📦 Confirm</option>
+            <option value="packed" ${b.status==='packed'?'disabled':''}>🛍️ Packed</option>
+            <option value="out_for_delivery" ${b.status==='out_for_delivery'?'disabled':''}>🚚 Out for Delivery</option>
+            <option value="completed">🎉 Complete</option>
+          </select>`;
+      }
+      // Pay button — only for customers, active bookings, not yet paid
+      if (!isProvider && ['accepted','confirmed','packed','out_for_delivery','completed'].includes(b.status) && (!b.payment || b.payment.status !== 'success')) {
+        actions += `<button class="btn btn-primary btn-sm" onclick="openPayment(${b.id})">💸 Pay ₹${svc.price||0}</button>`;
+      }
+      if (['accepted','confirmed','packed','out_for_delivery','completed'].includes(b.status)) {
+        actions += `<button class="btn btn-secondary btn-sm" onclick="openTracker(${b.id})">📍 Track</button>`;
+      }
+      if (['pending','accepted','confirmed','packed','out_for_delivery'].includes(b.status)) {
+        actions += `<button class="btn btn-secondary btn-sm" onclick="doAction(${b.id},'cancel')">Cancel</button>`;
+      }
+      actions += `<a href="chat.html?uid=${isProvider ? b.customer_id : b.provider_id}" class="btn btn-outline btn-sm">💬 Chat</a>`;
+
+      return `
+      <div class="booking-card" id="booking-${b.id}">
+        <div class="booking-top">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:52px;height:52px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#1a0a2e,#2d0a4e);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">${emoji}</div>
+            <div>
+              <div class="booking-svc-title">${svc.title || 'Service'}</div>
+              <div class="booking-meta">
+                <span>📅 ${formatDate(b.scheduled_at)}</span>
+                <span>${isProvider ? '👤 Customer:' : '🚀 Provider:'} ${other?.name || '—'}</span>
+                ${b.address ? `<span>📍 ${b.address}</span>` : ''}
+                ${b.contact_number ? `<span>📞 ${b.contact_number}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            ${statusBadge}
+            <div style="font-weight:700;font-size:1.1rem;margin-top:6px;color:var(--primary)">₹${svc.price || '—'}</div>
+            ${b.payment?.status === 'success' ? '<div class="text-success" style="font-size:.8rem">✅ Paid</div>' : ''}
+          </div>
+        </div>
+        ${b.notes ? `<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px;font-size:.85rem;color:var(--text-muted)">📝 ${b.notes}</div>` : ''}
+        <div class="booking-actions">${actions}</div>
+      </div>`;
+    }
+
+    async function doAction(id, action) {
+      const fns = { accept: api.acceptBooking, reject: api.rejectBooking, complete: api.completeBooking, cancel: api.cancelBooking };
+      try { await fns[action](id); showToast(`Booking ${action}ed!`,'success'); loadBookings(currentPage); }
+      catch(err) { showToast(err.message,'error'); }
+    }
+
+    async function updateTrackingStatus(id, status) {
+      if (!status) return;
+      try {
+        if (status === 'completed') await api.completeBooking(id);
+        else await api.updateBookingStatus(id, status);
+        showToast(`Status updated to ${status.replace('_',' ')}!`,'success');
+        loadBookings(currentPage);
+      } catch(err) { showToast(err.message,'error'); }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       REAL UPI PAYMENT FLOW
+       ════════════════════════════════════════════════════════════════════ */
+
+    async function openPayment(bookingId) {
+      const content = document.getElementById('pay-modal-content');
+      content.innerHTML = `<div class="flex-center" style="padding:60px"><div class="loader"></div></div>`;
+      openModal('pay-modal');
+
+      try {
+        const res = await api.initiatePayment({ booking_id: bookingId });
+        currentPaymentData = res.data;
+        renderPaymentUI(currentPaymentData);
+      } catch(err) {
+        content.innerHTML = `
+          <div class="modal-header">
+            <div class="modal-title">⚠️ Payment Error</div>
+            <button class="modal-close" onclick="closeModal('pay-modal')">✕</button>
+          </div>
+          <div class="empty-state" style="padding:30px">
+            <div class="empty-icon">💳</div>
+            <h3>${err.message}</h3>
+            <p>${err.message.includes('UPI ID') ? 'The service provider needs to add their UPI ID in their profile to receive payments.' : 'Please try again later.'}</p>
+          </div>`;
+      }
+    }
+
+    function renderPaymentUI(data) {
+      const { payment, upi_link, provider_upi, provider_name, amount, transaction_id, service_title } = data;
+
+      // Generate QR code
+      const qr = qrcode(0, 'M');
+      qr.addData(upi_link);
+      qr.make();
+      const qrImg = qr.createDataURL(6, 0);
+
+      document.getElementById('pay-modal-content').innerHTML = `
+        <div class="pay-header">
+          <div class="pay-subtitle">Pay for ${service_title}</div>
+          <div class="pay-amount">₹${amount.toLocaleString('en-IN')}</div>
+          <div class="pay-subtitle">to ${provider_name}</div>
+        </div>
+
+        <!-- QR Code -->
+        <div style="text-align:center;margin-bottom:16px">
+          <div class="pay-qr-wrap">
+            <img src="${qrImg}" alt="UPI QR Code" style="width:180px;height:180px">
+          </div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-top:8px">
+            Scan with any UPI app to pay
+          </div>
+        </div>
+
+        <!-- Provider UPI ID (tap to copy) -->
+        <div class="pay-upi-id" onclick="copyUPI('${provider_upi}')" title="Click to copy">
+          <span style="color:var(--primary)">UPI:</span> ${provider_upi}
+          <span class="copy-hint">📋 Tap to copy UPI ID</span>
+        </div>
+
+        <!-- Open UPI App button (works on mobile) -->
+        <a href="${upi_link}" class="btn btn-primary btn-full" style="margin-bottom:12px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;font-size:1rem">
+          📱 Open UPI App & Pay ₹${amount}
+        </a>
+
+        <div class="pay-divider">After payment, confirm below</div>
+
+        <!-- Steps -->
+        <div class="pay-steps">
+          <div class="pay-step">
+            <div class="pay-step-num">1</div>
+            <div>Scan the QR code above <strong>or</strong> tap "Open UPI App" to pay</div>
+          </div>
+          <div class="pay-step">
+            <div class="pay-step-num">2</div>
+            <div>Complete the payment in your UPI app (Google Pay, PhonePe, Paytm, etc.)</div>
+          </div>
+          <div class="pay-step">
+            <div class="pay-step-num">3</div>
+            <div>Enter the UPI reference number (optional) and confirm below</div>
+          </div>
+        </div>
+
+        <!-- UPI Ref & Confirm -->
+        <input class="pay-ref-input" id="upi-ref-input" placeholder="UPI Reference Number (optional)" />
+        <button class="btn btn-success btn-full" id="confirm-pay-btn" onclick="confirmRealPayment(${payment.id})" style="font-size:1rem;padding:14px">
+          ✅ I've Paid — Confirm Payment
+        </button>
+
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-secondary btn-sm" onclick="closeModal('pay-modal')">Cancel</button>
+        </div>
+
+        <div style="text-align:center;margin-top:16px;font-size:.75rem;color:var(--text-muted)">
+          Transaction: ${transaction_id}<br>
+          💡 Real money is transferred via UPI to the provider's bank account
+        </div>
+      `;
+    }
+
+    function copyUPI(upiId) {
+      navigator.clipboard.writeText(upiId).then(() => {
+        showToast('UPI ID copied!', 'success');
+      }).catch(() => {
+        // Fallback
+        const input = document.createElement('input');
+        input.value = upiId;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast('UPI ID copied!', 'success');
+      });
+    }
+
+    async function confirmRealPayment(paymentId) {
+      const btn = document.getElementById('confirm-pay-btn');
+      const upiRef = document.getElementById('upi-ref-input').value.trim();
+      btn.disabled = true;
+      btn.innerHTML = '<div class="loader" style="width:20px;height:20px;border-width:2px;margin:0 auto"></div>';
+
+      try {
+        const res = await api.confirmPayment(paymentId, {
+          payment_method: 'upi',
+          upi_ref: upiRef,
+        });
+
+        const { payment, provider_credited, commission } = res.data;
+
+        // Show success animation
+        document.getElementById('pay-modal-content').innerHTML = `
+          <div class="pay-success-anim">
+            <div class="pay-success-check">✓</div>
+            <div class="pay-success-amount gradient-text">₹${payment.amount.toLocaleString('en-IN')}</div>
+            <div class="pay-success-detail">Payment Successful!</div>
+            <div class="pay-success-detail">Provider credited: ₹${provider_credited}</div>
+            <div class="pay-success-detail" style="margin-top:8px">Txn: ${payment.transaction_id}</div>
+            <button class="btn btn-primary mt" onclick="closeModal('pay-modal');loadBookings(currentPage)">Done</button>
+          </div>
+        `;
+
+        showToast('✅ Payment confirmed! Real money transferred to provider.', 'success');
+      } catch(err) {
+        btn.disabled = false;
+        btn.textContent = '✅ I\'ve Paid — Confirm Payment';
+        showToast(err.message, 'error');
+      }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════
+       ORDER TRACKER
+       ════════════════════════════════════════════════════════════════════ */
+    function openTracker(bookingId) {
+      const booking = window.currentBookings.find(b => b.id === bookingId);
+      if (!booking) return;
+
+      document.getElementById('tracker-booking-id').textContent = bookingId;
+
+      const stages = [
+        { id: 'pending', title: 'Order Received', icon: '🛍️' },
+        { id: 'accepted', title: 'Order Accepted', icon: '✅' },
+        { id: 'confirmed', title: 'Confirmed / Processing', icon: '⚙️' },
+        { id: 'packed', title: 'Ready to Ship', icon: '📦' },
+        { id: 'out_for_delivery', title: 'Out for Delivery', icon: '🚚' },
+        { id: 'completed', title: 'Delivered', icon: '🎉' }
+      ];
+
+      const currentIndex = stages.findIndex(s => s.id === booking.status);
+
+      const html = stages.map((stage, idx) => {
+        let sc = '';
+        if (idx < currentIndex) sc = 'completed';
+        else if (idx === currentIndex) sc = 'completed current';
+        if (booking.status === 'cancelled') { sc = idx === 0 ? 'completed' : ''; }
+
+        return `
+          <div class="tracker-item ${sc}">
+            <div class="tracker-line"></div>
+            <div class="tracker-icon">${sc.includes('completed') ? '✓' : stage.icon}</div>
+            <div class="tracker-content">
+              <div class="tracker-title">${stage.title}</div>
+              <div class="tracker-desc">${idx === 0 ? formatDate(booking.created_at) : (idx === currentIndex ? formatDate(booking.updated_at) : '')}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('tracker-container').innerHTML = html;
+      openModal('tracker-modal');
+    }
+
+    closeModalOnOverlay('pay-modal');
+    closeModalOnOverlay('tracker-modal');
+    loadBookings(1);
+  </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SheEarn – Skill-to-Income Platform for Women</title>
+  <meta name="description" content="SheEarn empowers women entrepreneurs to offer services, grow income, and access government schemes — all in one place.">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 100px 24px 60px;
+      background: var(--grad-hero); position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content:''; position:absolute; width:800px; height:800px; border-radius:50%;
+      background: radial-gradient(circle, rgba(168,85,247,0.12), transparent 70%);
+      top:50%; left:50%; transform:translate(-50%,-50%);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(168,85,247,0.12); border: 1px solid var(--border-strong);
+      border-radius: 99px; padding: 6px 18px; font-size:.85rem; font-weight:600;
+      color: var(--primary); margin-bottom: 24px;
+    }
+    .hero-title { margin-bottom: 20px; }
+    .hero-subtitle { font-size: 1.15rem; max-width: 560px; margin: 0 auto 40px; }
+    .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .hero-stats {
+      display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;
+      margin-top: 64px; padding-top: 40px; border-top: 1px solid var(--border);
+    }
+    .hero-stat .num { font-size: 2rem; font-weight: 800; }
+    .hero-stat .lbl { font-size: .82rem; color: var(--text-muted); }
+
+    /* ── Features ── */
+    .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+    @media(max-width:768px){ .features-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px; transition: var(--transition);
+    }
+    .feature-card:hover { border-color: var(--border-strong); background: var(--bg-card-hover); transform:translateY(-4px); }
+    .feature-icon { font-size: 2.2rem; margin-bottom: 16px; }
+    .feature-card h3 { margin-bottom: 8px; }
+
+    /* ── How It Works ── */
+    .steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; position: relative; }
+    .steps::before {
+      content:''; position:absolute; top:40px; left:10%; right:10%; height:2px;
+      background: linear-gradient(90deg, var(--primary), var(--accent)); opacity:.3;
+    }
+    @media(max-width:768px){ .steps { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:480px){ .steps { grid-template-columns: 1fr; } }
+    .step { text-align: center; padding: 12px; }
+    .step-num {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--grad-primary); color: #fff;
+      font-weight: 800; font-size: 1.3rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; position: relative; z-index: 1;
+      box-shadow: 0 0 24px var(--primary-glow);
+    }
+
+    /* ── Categories ── */
+    .cat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+    @media(max-width:768px){ .cat-grid { grid-template-columns: repeat(2,1fr); } }
+    .cat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; text-align: center;
+      transition: var(--transition); cursor: pointer; text-decoration: none;
+    }
+    .cat-card:hover { border-color: var(--border-strong); transform:translateY(-4px); }
+    .cat-card .cat-emoji { font-size: 2.4rem; margin-bottom: 10px; }
+    .cat-card .cat-name  { font-weight: 700; font-size: .95rem; color: var(--text-primary); }
+
+    /* ── Testimonials ── */
+    .testimonials { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+    @media(max-width:768px){ .testimonials { grid-template-columns:1fr; } }
+    .testimonial-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px; position: relative;
+    }
+    .testimonial-card::before {
+      content:'"'; position:absolute; top:16px; left:20px;
+      font-size:4rem; opacity:.1; font-family:Georgia,serif; line-height:1;
+    }
+    .quote { font-style: italic; margin-bottom: 20px; }
+    .reviewer { display: flex; align-items: center; gap: 12px; }
+
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px 24px 32px;
+    }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; max-width: 1200px; margin: 0 auto; }
+    @media(max-width:768px){ .footer-grid { grid-template-columns: 1fr 1fr; } }
+    .footer-brand p { font-size:.88rem; margin-top:12px; }
+    .footer-col h4 { font-size:.9rem; margin-bottom:14px; color:var(--text-primary); }
+    .footer-col a  { display:block; font-size:.85rem; color:var(--text-muted); margin-bottom:8px; }
+    .footer-col a:hover { color:var(--primary); }
+    .footer-bottom {
+      max-width:1200px; margin:32px auto 0; padding-top:24px;
+      border-top:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      font-size:.82rem; color:var(--text-muted); flex-wrap: wrap; gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Navbar -->
+  <header class="navbar" id="navbar"></header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div style="position:relative;z-index:1;max-width:800px">
+      <div class="hero-badge">🌸 Empowering Women Entrepreneurs</div>
+      <h1 class="hero-title">
+        Turn Your <span class="gradient-text">Skills</span> Into<br>a Thriving Income
+      </h1>
+      <p class="hero-subtitle">
+        SheEarn connects skilled women with customers in their neighbourhood —
+        from cooking and stitching to tutoring and beauty.
+        Your talent deserves to be paid.
+      </p>
+      <div class="hero-actions">
+        <a href="browse.html" class="btn btn-primary btn-lg">🔍 Find a Service</a>
+        <a href="auth.html?tab=register&role=provider" class="btn btn-secondary btn-lg">🚀 Start Earning</a>
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- Features -->
+  <section class="section">
+    <div class="container">
+      <div class="text-center mb-lg">
+        <h2>Everything You Need to <span class="gradient-text">Succeed</span></h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📍</div>
+          <h3>Location-Based Discovery</h3>
+          <p>Customers find providers within their chosen radius using GPS-powered search.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💸</div>
+          <h3>Secure UPI Payments</h3>
+          <p>Integrated wallet and UPI payment system. Earnings land directly in your wallet.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>Real-time Chat</h3>
+          <p>Communicate directly with customers or providers through our live chat feature.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏛️</div>
+          <h3>Government Schemes</h3>
+          <p>Discover and apply for women-focused government schemes and financial aid.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⭐</div>
+          <h3>Trust & Ratings</h3>
+          <p>Verified reviews and star ratings build trust between customers and providers.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" style="background:var(--bg-surface)">
+    <div class="container">
+      <div class="text-center mb-lg">
+        <h2>How It <span class="gradient-text">Works</span></h2>
+        <p>Get started in minutes</p>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><h3>Create Account</h3><p>Register as a customer or service provider</p></div>
+        <div class="step"><div class="step-num">2</div><h3>List Your Service</h3><p>Providers add services with pricing and photos</p></div>
+        <div class="step"><div class="step-num">3</div><h3>Get Booked</h3><p>Customers find and book your services nearby</p></div>
+        <div class="step"><div class="step-num">4</div><h3>Earn & Grow</h3><p>Complete bookings, receive payment, build reputation</p></div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav-logo" style="font-size:1.5rem">She<span>Earn</span></div>
+        <p>Empowering women to turn skills into sustainable income through technology.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <a href="browse.html">Browse Services</a>
+        <a href="schemes.html">Gov Schemes</a>
+        <a href="auth.html">Login</a>
+      </div>
+      <div class="footer-col">
+        <h4>For Providers</h4>
+        <a href="auth.html?tab=register&role=provider">List Your Service</a>
+        <a href="bookings.html">Manage Bookings</a>
+        <a href="wallet.html">Your Wallet</a>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <a href="#">Help Center</a>
+        <a href="#">Contact Us</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2024 SheEarn. Made with ❤️ for women entrepreneurs.</span>
+      <span>🇮🇳 India</span>
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>buildNavbar('');</script>
+</body>
+</html>

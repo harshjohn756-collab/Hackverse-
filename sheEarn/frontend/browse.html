@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Services – SheEarn</title>
+  <meta name="description" content="Find skilled women service providers near you on SheEarn.">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .browse-layout { display: grid; grid-template-columns: 280px 1fr; gap: 0; min-height: calc(100vh - 70px); }
+    .filter-panel {
+      background: var(--bg-surface); border-right: 1px solid var(--border);
+      padding: 28px 20px; position: sticky; top: 70px;
+      height: calc(100vh - 70px); overflow-y: auto;
+    }
+    .filter-title { font-size: .8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .filter-section { margin-bottom: 28px; }
+    .cat-filter-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition); font-size: .9rem;
+      color: var(--text-secondary); font-weight: 500; user-select: none;
+    }
+    .cat-filter-item:hover { background: var(--bg-card); color: var(--text-primary); }
+    .cat-filter-item.active { background: rgba(168,85,247,.12); color: var(--primary); }
+    .results-area { padding: 28px; }
+    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .sort-select { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius-sm); font-family: inherit; font-size: .85rem; }
+    .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; }
+    .geo-bar {
+      background: rgba(168,85,247,.08); border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .geo-bar label { font-size:.85rem; font-weight:600; color:var(--text-secondary); }
+    .geo-bar input { width: 80px; }
+    @media(max-width:900px){ .browse-layout { grid-template-columns: 1fr; } .filter-panel { display: none; } }
+  </style>
+</head>
+<body>
+  <header class="navbar" id="navbar"></header>
+
+  <div class="page-content">
+    <div class="browse-layout">
+      <!-- Filter Sidebar -->
+      <aside class="filter-panel">
+        <div class="filter-section">
+          <div class="filter-title">Search</div>
+          <input class="form-input" id="search-input" placeholder="🔍 Search services…" oninput="debounceLoad()">
+        </div>
+        <div class="filter-section">
+          <div class="filter-title">Category</div>
+          <div id="cat-filters">
+            <div class="cat-filter-item active" data-cat="" onclick="selectCat(this,'')">✨ All Categories</div>
+            <div class="cat-filter-item" data-cat="cooking" onclick="selectCat(this,'cooking')">🍳 Cooking</div>
+            <div class="cat-filter-item" data-cat="stitching" onclick="selectCat(this,'stitching')">🧵 Stitching</div>
+            <div class="cat-filter-item" data-cat="tutoring" onclick="selectCat(this,'tutoring')">📚 Tutoring</div>
+            <div class="cat-filter-item" data-cat="handmade_crafts" onclick="selectCat(this,'handmade_crafts')">🎨 Handmade Crafts</div>
+            <div class="cat-filter-item" data-cat="beauty" onclick="selectCat(this,'beauty')">💄 Beauty</div>
+            <div class="cat-filter-item" data-cat="cleaning" onclick="selectCat(this,'cleaning')">🧹 Cleaning</div>
+            <div class="cat-filter-item" data-cat="other" onclick="selectCat(this,'other')">🌀 Other</div>
+          </div>
+        </div>
+        <div class="filter-section">
+          <div class="filter-title">📍 Near Me</div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Radius (km)</label>
+            <input class="form-input" id="radius-input" type="number" value="20" min="1" max="200">
+          </div>
+          <button class="btn btn-outline btn-sm btn-full" onclick="useMyLocation()">📍 Use My Location</button>
+          <div id="geo-status" class="mt-sm" style="font-size:.8rem;color:var(--text-muted)"></div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="loadServices(1)">Apply Filters</button>
+        <button class="btn btn-secondary btn-full mt-sm" onclick="clearFilters()">Clear All</button>
+      </aside>
+
+      <!-- Results -->
+      <main class="results-area">
+        <div id="geo-bar" class="geo-bar hidden">
+          <span>📍</span>
+          <span id="geo-label" style="font-weight:600;color:var(--primary)"></span>
+          <button class="btn btn-sm btn-secondary" onclick="clearGeo()">✕ Clear</button>
+        </div>
+        <div class="results-header">
+          <div>
+            <h2 id="results-title">All Services</h2>
+            <p id="results-count" class="text-muted" style="font-size:.88rem"></p>
+          </div>
+          <select class="sort-select" id="sort-select" onchange="loadServices(1)">
+            <option value="">Newest First</option>
+            <option value="price_asc">Price: Low → High</option>
+            <option value="price_desc">Price: High → Low</option>
+            <option value="rating">Top Rated</option>
+          </select>
+        </div>
+        <div class="services-grid" id="services-grid">
+          <div style="grid-column:1/-1" class="flex-center" style="padding:60px">
+            <div class="loader"></div>
+          </div>
+        </div>
+        <div id="pagination" class="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!Auth.requireAuth()) throw '';
+    buildNavbar('browse');
+
+    let currentPage = 1, currentCat = '', userLat = null, userLon = null;
+    let debounceTimer;
+
+    // Pick up URL query param
+    const urlCat = new URLSearchParams(location.search).get('category');
+    if (urlCat) {
+      currentCat = urlCat;
+      document.querySelectorAll('.cat-filter-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.cat === urlCat);
+      });
+    }
+
+    function debounceLoad() { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => loadServices(1), 400); }
+
+    function selectCat(el, cat) {
+      document.querySelectorAll('.cat-filter-item').forEach(e => e.classList.remove('active'));
+      el.classList.add('active');
+      currentCat = cat;
+      const labels = { '': 'All Services', cooking: '🍳 Cooking', stitching: '🧵 Stitching', tutoring: '📚 Tutoring', handmade_crafts: '🎨 Handmade Crafts', beauty: '💄 Beauty', cleaning: '🧹 Cleaning', other: '✨ Other' };
+      document.getElementById('results-title').textContent = labels[cat] || 'All Services';
+      loadServices(1);
+    }
+
+    async function useMyLocation() {
+      const status = document.getElementById('geo-status');
+      status.textContent = '🌍 Getting location…';
+      if (!navigator.geolocation) { status.textContent = 'Geolocation not supported'; return; }
+      navigator.geolocation.getCurrentPosition(pos => {
+        userLat = pos.coords.latitude;
+        userLon = pos.coords.longitude;
+        status.textContent = `✅ Location set (${userLat.toFixed(3)}, ${userLon.toFixed(3)})`;
+        const geoBar = document.getElementById('geo-bar');
+        document.getElementById('geo-label').textContent = `Showing services within ${document.getElementById('radius-input').value} km`;
+        geoBar.classList.remove('hidden');
+        loadServices(1);
+      }, () => { status.textContent = '❌ Location denied'; });
+    }
+
+    function clearGeo() {
+      userLat = userLon = null;
+      document.getElementById('geo-bar').classList.add('hidden');
+      document.getElementById('geo-status').textContent = '';
+      loadServices(1);
+    }
+
+    function clearFilters() {
+      currentCat = ''; userLat = userLon = null;
+      document.getElementById('search-input').value = '';
+      document.getElementById('radius-input').value = '20';
+      document.getElementById('geo-bar').classList.add('hidden');
+      document.getElementById('geo-status').textContent = '';
+      document.querySelectorAll('.cat-filter-item').forEach((e,i) => e.classList.toggle('active', i===0));
+      document.getElementById('results-title').textContent = 'All Services';
+      loadServices(1);
+    }
+
+    async function loadServices(page = 1) {
+      currentPage = page;
+      const grid = document.getElementById('services-grid');
+      grid.innerHTML = '<div style="grid-column:1/-1;display:flex;justify-content:center;padding:60px"><div class="loader"></div></div>';
+
+      const params = { page, per_page: 12 };
+      if (currentCat) params.category = currentCat;
+      const q = document.getElementById('search-input').value.trim();
+      if (q) params.q = q;
+      if (userLat) { params.lat = userLat; params.lon = userLon; params.radius = document.getElementById('radius-input').value; }
+
+      try {
+        const res = await api.listServices(params);
+        const data = res.data;
+        const items = data.items || [];
+
+        document.getElementById('results-count').textContent = `${data.total || items.length} services found`;
+
+        if (!items.length) {
+          grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-icon">🔍</div>
+            <h3>No services found</h3>
+            <p>Try a different search or category</p>
+          </div>`;
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        // Sort client-side
+        const sort = document.getElementById('sort-select').value;
+        if (sort === 'price_asc') items.sort((a,b) => a.price - b.price);
+        else if (sort === 'price_desc') items.sort((a,b) => b.price - a.price);
+        else if (sort === 'rating') items.sort((a,b) => b.avg_rating - a.avg_rating);
+
+        grid.innerHTML = items.map(serviceCardHtml).join('');
+
+        buildPagination('pagination', data.page || 1, data.pages || 1, loadServices);
+      } catch (err) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-icon">⚠️</div>
+          <h3>Could not load services</h3>
+          <p>${err.message}</p>
+        </div>`;
+      }
+    }
+
+    loadServices(1);
+  </script>
+</body>
+</html>

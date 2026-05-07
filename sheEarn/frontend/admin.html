@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard – SheEarn</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .admin-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 70px); }
+    .admin-sidebar { background: var(--bg-surface); border-right: 1px solid var(--border); padding: 24px 14px; position: sticky; top: 70px; height: calc(100vh - 70px); overflow-y: auto; }
+    .admin-main { padding: 32px; min-width: 0; }
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 32px; }
+    @media(max-width:768px) { .stats-grid { grid-template-columns: repeat(2,1fr); } .admin-layout { grid-template-columns: 1fr; } .admin-sidebar { display: none; } }
+    .stat-card-admin {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; position: relative; overflow: hidden;
+    }
+    .stat-card-admin::after { content: attr(data-icon); position: absolute; right: 16px; bottom: 12px; font-size: 2.5rem; opacity: .08; }
+    .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .admin-top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  </style>
+</head>
+<body>
+  <header class="navbar" id="navbar"></header>
+  <div class="page-content">
+    <div class="admin-layout">
+      <!-- Admin Sidebar -->
+      <aside class="admin-sidebar">
+        <div style="font-size:.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Admin Panel</div>
+        <nav class="sidebar-nav">
+          <button class="sidebar-item active" id="nav-overview"   onclick="showSection('overview')">  <span class="icon">📊</span> Overview</button>
+          <button class="sidebar-item"         id="nav-users"     onclick="showSection('users')">      <span class="icon">👥</span> Users</button>
+          <button class="sidebar-item"         id="nav-services"  onclick="showSection('services')">   <span class="icon">📋</span> Services</button>
+          <button class="sidebar-item"         id="nav-bookings"  onclick="showSection('bookings')">   <span class="icon">📅</span> Bookings</button>
+          <button class="sidebar-item"         id="nav-payments"  onclick="showSection('payments')">   <span class="icon">💳</span> Payments</button>
+          <div class="sidebar-divider"></div>
+          <button class="sidebar-item"         id="nav-schemes"   onclick="showSection('admin-schemes')"><span class="icon">🏛️</span> Schemes</button>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="admin-main">
+
+        <!-- ── Overview ── -->
+        <div class="admin-section active" id="section-overview">
+          <h2 class="mb-lg">Dashboard Overview</h2>
+          <div class="stats-grid" id="stats-grid">
+            <div class="flex-center" style="grid-column:1/-1;padding:40px"><div class="loader"></div></div>
+          </div>
+        </div>
+
+        <!-- ── Users ── -->
+        <div class="admin-section" id="section-users">
+          <div class="admin-top-bar">
+            <h2>All Users</h2>
+            <select class="sort-select" id="user-role-filter" onchange="loadUsers(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);padding:8px 12px;border-radius:var(--radius-sm)">
+              <option value="">All Roles</option>
+              <option value="customer">Customers</option>
+              <option value="provider">Providers</option>
+              <option value="admin">Admins</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Email/Phone</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+          <div id="users-pag" class="pagination"></div>
+        </div>
+
+        <!-- ── Services ── -->
+        <div class="admin-section" id="section-services">
+          <div class="admin-top-bar">
+            <h2>Pending Approvals</h2>
+            <span class="badge badge-warning" id="pending-count"></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px" id="pending-services-list">
+            <div class="flex-center" style="padding:60px"><div class="loader"></div></div>
+          </div>
+        </div>
+
+        <!-- ── Bookings ── -->
+        <div class="admin-section" id="section-bookings">
+          <div class="admin-top-bar">
+            <h2>All Bookings</h2>
+            <select class="sort-select" id="booking-status-filter" onchange="loadAdminBookings(1)" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);padding:8px 12px;border-radius:var(--radius-sm)">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Service</th><th>Customer</th><th>Provider</th><th>Status</th><th>Scheduled</th><th>Amount</th></tr></thead>
+              <tbody id="bookings-tbody"></tbody>
+            </table>
+          </div>
+          <div id="bookings-pag" class="pagination"></div>
+        </div>
+
+        <!-- ── Payments ── -->
+        <div class="admin-section" id="section-payments">
+          <div class="admin-top-bar"><h2>All Payments</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Txn ID</th><th>Booking</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody id="payments-tbody"></tbody>
+            </table>
+          </div>
+          <div id="payments-pag" class="pagination"></div>
+        </div>
+
+
+        <!-- ── Schemes ── -->
+        <div class="admin-section" id="section-admin-schemes">
+          <div class="admin-top-bar">
+            <h2>Government Schemes</h2>
+            <button class="btn btn-primary btn-sm" onclick="openModal('add-scheme-modal')">+ Add Scheme</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px" id="admin-schemes-list">
+            <div class="flex-center" style="padding:40px"><div class="loader"></div></div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+
+  <!-- Add Scheme Modal -->
+  <div class="modal-overlay" id="add-scheme-modal">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">Add Government Scheme</div><button class="modal-close" onclick="closeModal('add-scheme-modal')">✕</button></div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group"><label class="form-label">Scheme Name</label><input class="form-input" id="sc-name"></div>
+        <div class="form-group"><label class="form-label">Category</label>
+          <select class="form-select" id="sc-cat">
+            <option value="financial_inclusion">Financial Inclusion</option>
+            <option value="entrepreneurship">Entrepreneurship</option>
+            <option value="health_maternity">Health & Maternity</option>
+            <option value="safety_education">Safety & Education</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Eligibility</label><textarea class="form-textarea" id="sc-elig" style="min-height:70px"></textarea></div>
+        <div class="form-group"><label class="form-label">Benefits</label><textarea class="form-textarea" id="sc-benefits" style="min-height:70px"></textarea></div>
+        <div class="form-group"><label class="form-label">Official URL</label><input class="form-input" id="sc-url" placeholder="https://…"></div>
+        <button class="btn btn-primary" onclick="addScheme()">Add Scheme</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!Auth.requireAuth() || !Auth.requireRole('admin')) throw '';
+    buildNavbar('admin');
+
+    let activeSection = 'overview';
+
+    function showSection(name) {
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+      document.getElementById(`section-${name}`).classList.add('active');
+      document.getElementById(`nav-${name}`)?.classList.add('active');
+      activeSection = name;
+
+      if (name === 'overview') loadStats();
+      if (name === 'users') loadUsers(1);
+      if (name === 'services') loadPendingServices();
+      if (name === 'bookings') loadAdminBookings(1);
+      if (name === 'payments') loadAdminPayments(1);
+      if (name === 'admin-schemes') loadAdminSchemes();
+    }
+
+    // ── STATS ──
+    async function loadStats() {
+      try {
+        const res = await api.adminStats();
+        const d = res.data;
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card-admin" data-icon="👥"><div class="stat-label">Total Users</div><div class="stat-value gradient-text">${d.users.total}</div><div style="font-size:.8rem;color:var(--text-muted);margin-top:4px">Providers: ${d.users.providers} | Customers: ${d.users.customers}</div></div>
+          <div class="stat-card-admin" data-icon="📋"><div class="stat-label">Services</div><div class="stat-value gradient-text">${d.services.total}</div><div style="font-size:.8rem;color:var(--warning);margin-top:4px">⏳ ${d.services.pending} pending approval</div></div>
+          <div class="stat-card-admin" data-icon="📅"><div class="stat-label">Total Bookings</div><div class="stat-value gradient-text">${d.bookings.total}</div><div style="font-size:.8rem;color:var(--text-muted);margin-top:4px">Completed: ${d.bookings.completed}</div></div>
+          <div class="stat-card-admin" data-icon="💰"><div class="stat-label">Revenue</div><div class="stat-value gradient-text">₹${(d.revenue.total_amount||0).toLocaleString('en-IN')}</div><div style="font-size:.8rem;color:var(--text-muted);margin-top:4px">${d.revenue.total_payments} payments</div></div>`;
+      } catch(err) { showToast(err.message,'error'); }
+    }
+
+    // ── USERS ──
+    async function loadUsers(page=1) {
+      const role = document.getElementById('user-role-filter').value;
+      try {
+        const res = await api.adminUsers({ page, per_page:15, ...(role?{role}:{}) });
+        const { items, pages } = res.data;
+        document.getElementById('users-tbody').innerHTML = items.map(u => `
+          <tr>
+            <td><div style="font-weight:600">${u.name}</div></td>
+            <td style="color:var(--text-muted);font-size:.85rem">${u.email || u.phone || '—'}</td>
+            <td><span class="badge ${u.role==='admin'?'badge-danger':u.role==='provider'?'badge-primary':'badge-muted'}">${u.role}</span></td>
+            <td><span class="badge ${u.is_active?'badge-success':'badge-danger'}">${u.is_active?'Active':'Inactive'}</span></td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${new Date(u.created_at).toLocaleDateString()}</td>
+            <td class="action-btns">
+              <button class="btn btn-sm btn-secondary" onclick="toggleUser(${u.id})">${u.is_active?'Deactivate':'Activate'}</button>
+              ${u.role!=='admin'?`<button class="btn btn-sm btn-outline" onclick="makeAdmin(${u.id})">Make Admin</button>`:''}
+            </td>
+          </tr>`).join('');
+        buildPagination('users-pag', page, pages, loadUsers);
+      } catch(err) { showToast(err.message,'error'); }
+    }
+    async function toggleUser(id) { try { await api.adminToggleUser(id); showToast('User status updated','success'); loadUsers(1); } catch(e){showToast(e.message,'error');} }
+    async function makeAdmin(id) { if(!confirm('Promote to admin?'))return; try { await api.adminMakeAdmin(id); showToast('User promoted to admin','success'); loadUsers(1); } catch(e){showToast(e.message,'error');} }
+
+    // ── PENDING SERVICES ──
+    async function loadPendingServices() {
+      try {
+        const res = await api.adminPendingServices();
+        const items = res.data.items;
+        document.getElementById('pending-count').textContent = `${items.length} pending`;
+        const el = document.getElementById('pending-services-list');
+        if (!items.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><h3>All caught up! No pending services.</h3></div>'; return; }
+        el.innerHTML = items.map(s => `
+          <div class="card" style="display:flex;align-items:center;gap:14px;padding:16px">
+            <div style="font-size:1.8rem">${CATEGORY_EMOJI[s.category]||'✨'}</div>
+            <div style="flex:1">
+              <div style="font-weight:700">${s.title}</div>
+              <div style="font-size:.82rem;color:var(--text-muted)">${CATEGORY_LABEL[s.category]} • ₹${s.price} • by ${s.provider?.name||'?'}</div>
+              <p style="font-size:.82rem;margin-top:4px">${(s.description||'').slice(0,100)}</p>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-success btn-sm" onclick="approveService(${s.id})">✅ Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectService(${s.id})">❌ Reject</button>
+              <a href="service.html?id=${s.id}" class="btn btn-secondary btn-sm">View</a>
+            </div>
+          </div>`).join('');
+      } catch(err) { showToast(err.message,'error'); }
+    }
+    async function approveService(id) { try { await api.adminApproveService(id); showToast('Service approved!','success'); loadPendingServices(); } catch(e){showToast(e.message,'error');} }
+    async function rejectService(id)  { try { await api.adminRejectService(id);  showToast('Service rejected','info');    loadPendingServices(); } catch(e){showToast(e.message,'error');} }
+
+    // ── BOOKINGS ──
+    async function loadAdminBookings(page=1) {
+      const status = document.getElementById('booking-status-filter').value;
+      try {
+        const res = await api.adminAllBookings({ page, per_page:15, ...(status?{status}:{}) });
+        const { items, pages } = res.data;
+        document.getElementById('bookings-tbody').innerHTML = items.map(b => `
+          <tr>
+            <td>#${b.id}</td>
+            <td style="font-size:.85rem">${b.service?.title||'—'}</td>
+            <td style="font-size:.85rem">${b.customer?.name||'—'}</td>
+            <td style="font-size:.85rem">${b.provider?.name||'—'}</td>
+            <td><span class="badge ${STATUS_BADGE[b.status]||'badge-muted'}">${b.status}</span></td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${formatDate(b.scheduled_at)}</td>
+            <td style="font-weight:700;color:var(--primary)">₹${b.service?.price||'—'}</td>
+          </tr>`).join('');
+        buildPagination('bookings-pag', page, pages, loadAdminBookings);
+      } catch(err) { showToast(err.message,'error'); }
+    }
+
+    // ── PAYMENTS ──
+    async function loadAdminPayments(page=1) {
+      try {
+        const res = await api.adminAllPayments({ page, per_page:15 });
+        const { items, pages } = res.data;
+        document.getElementById('payments-tbody').innerHTML = items.map(p => `
+          <tr>
+            <td style="font-size:.8rem;color:var(--text-muted)">${p.transaction_id}</td>
+            <td>#${p.booking_id}</td>
+            <td style="font-weight:700;color:var(--primary)">₹${p.amount}</td>
+            <td><span class="badge ${STATUS_BADGE[p.status]||'badge-muted'}">${p.status}</span></td>
+            <td style="font-size:.82rem;color:var(--text-muted)">${formatDate(p.created_at)}</td>
+          </tr>`).join('');
+        buildPagination('payments-pag', page, pages, loadAdminPayments);
+      } catch(err) { showToast(err.message,'error'); }
+    }
+
+
+    // ── SCHEMES ──
+    async function loadAdminSchemes() {
+      try {
+        const res = await api.listSchemes({ per_page: 50 });
+        const items = res.data.items;
+        const el = document.getElementById('admin-schemes-list');
+        if (!items.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🏛️</div><h3>No schemes yet</h3></div>'; return; }
+        el.innerHTML = items.map(s => `
+          <div class="card" style="display:flex;align-items:center;gap:14px;padding:14px">
+            <div style="font-size:1.8rem">🏛️</div>
+            <div style="flex:1"><div style="font-weight:700">${s.name}</div><div style="font-size:.82rem;color:var(--text-muted)">${s.category}</div></div>
+            <span class="badge ${s.is_active?'badge-success':'badge-muted'}">${s.is_active?'Active':'Inactive'}</span>
+          </div>`).join('');
+      } catch(err) { showToast(err.message,'error'); }
+    }
+    async function addScheme() {
+      const name = document.getElementById('sc-name').value.trim();
+      if (!name) { showToast('Name required','error'); return; }
+      try {
+        await api.createScheme ? api.createScheme({ name, category: document.getElementById('sc-cat').value, eligibility: document.getElementById('sc-elig').value, benefits: document.getElementById('sc-benefits').value, scheme_url: document.getElementById('sc-url').value }) : null;
+        const body = { name, category: document.getElementById('sc-cat').value, eligibility: document.getElementById('sc-elig').value, benefits: document.getElementById('sc-benefits').value, scheme_url: document.getElementById('sc-url').value };
+        await apiFetch('/schemes/', { method:'POST', body: JSON.stringify(body) });
+        showToast('Scheme added!','success'); closeModal('add-scheme-modal'); loadAdminSchemes();
+      } catch(e) { showToast(e.message,'error'); }
+    }
+
+    closeModalOnOverlay('add-scheme-modal');
+    loadStats();
+  </script>
+</body>
+</html>

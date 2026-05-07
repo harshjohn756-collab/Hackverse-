@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Wallet – SheEarn</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .wallet-hero {
+      background: var(--grad-primary); border-radius: var(--radius-xl);
+      padding: 40px; text-align: center; position: relative; overflow: hidden; margin-bottom: 32px;
+    }
+    .wallet-hero::before {
+      content:''; position:absolute; width:300px; height:300px; border-radius:50%;
+      background:rgba(255,255,255,.07); top:-80px; right:-60px;
+    }
+    .wallet-balance { font-size: 3.5rem; font-weight: 900; color: #fff; position: relative; }
+    .wallet-label { color: rgba(255,255,255,.75); font-size:.9rem; margin-top:4px; position: relative; }
+    .wallet-sub-stats { display: flex; gap: 0; margin-top: 28px; position: relative; }
+    .wallet-sub-stat { flex: 1; padding: 0 20px; }
+    .wallet-sub-stat:not(:last-child) { border-right: 1px solid rgba(255,255,255,.2); }
+    .wallet-sub-stat .val { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .wallet-sub-stat .lbl { font-size: .78rem; color: rgba(255,255,255,.65); }
+    .txn-item {
+      display: flex; align-items: center; gap: 14px; padding: 16px;
+      border-bottom: 1px solid var(--border); transition: var(--transition);
+    }
+    .txn-item:hover { background: var(--bg-card); }
+    .txn-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .txn-icon.credit { background: rgba(16,185,129,.15); }
+    .txn-icon.debit  { background: rgba(239,68,68,.15); }
+    .txn-icon.pending{ background: rgba(245,158,11,.15); }
+  </style>
+</head>
+<body>
+  <header class="navbar" id="navbar"></header>
+  <div class="page-content">
+    <div style="max-width:800px;margin:0 auto;padding:32px 24px">
+      <div class="mb-lg">
+        <h1>My Wallet</h1>
+        <p class="text-muted">Manage your earnings and payments</p>
+      </div>
+
+      <!-- Wallet Card -->
+      <div class="wallet-hero" id="wallet-card">
+        <div class="flex-center" style="padding:20px"><div class="loader" style="border-color:rgba(255,255,255,.3);border-top-color:#fff"></div></div>
+      </div>
+
+      <!-- Transaction History -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:20px 20px 0">
+          <h3>Transaction History</h3>
+          <p class="text-muted" style="font-size:.85rem">All your payment transactions</p>
+        </div>
+        <div id="txn-list" style="margin-top:16px">
+          <div class="flex-center" style="padding:40px"><div class="loader"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!Auth.requireAuth()) throw '';
+    buildNavbar('wallet');
+
+    const user = Auth.getUser();
+
+    async function loadWallet() {
+      try {
+        const wRes = await api.getWallet();
+        const w = wRes.data;
+        document.getElementById('wallet-card').innerHTML = `
+          <div style="position:relative">
+            <div class="wallet-label">Available Balance</div>
+            <div class="wallet-balance">₹${w.balance.toLocaleString('en-IN')}</div>
+            <div class="wallet-sub-stats">
+              <div class="wallet-sub-stat">
+                <div class="val">₹${w.total_earned.toLocaleString('en-IN')}</div>
+                <div class="lbl">Total Earned</div>
+              </div>
+              <div class="wallet-sub-stat">
+                <div class="val">₹${w.total_spent.toLocaleString('en-IN')}</div>
+                <div class="lbl">Total Spent</div>
+              </div>
+            </div>
+          </div>`;
+      } catch(err) { showToast(err.message,'error'); }
+    }
+
+    async function loadTransactions() {
+      try {
+        const res = await api.paymentHistory();
+        const payments = res.data;
+        const el = document.getElementById('txn-list');
+
+        if (!payments.length) {
+          el.innerHTML = `<div class="empty-state" style="padding:40px"><div class="empty-icon">💳</div><h3>No transactions yet</h3><p>Your payment history will appear here.</p></div>`;
+          return;
+        }
+
+        el.innerHTML = payments.map(p => {
+          const isCredit = user.role === 'provider' && p.provider_id === user.id && p.status === 'success';
+          const typeClass = p.status === 'success' ? (isCredit ? 'credit' : 'debit') : 'pending';
+          const icons = { success: isCredit ? '↓' : '↑', pending: '⏳', failed: '❌', refunded: '↩' };
+          const sign   = isCredit ? '+' : '-';
+          const color  = p.status === 'success' ? (isCredit ? 'var(--success)' : 'var(--danger)') : 'var(--warning)';
+          return `
+          <div class="txn-item">
+            <div class="txn-icon ${typeClass}">${icons[p.status] || '?'}</div>
+            <div style="flex:1">
+              <div style="font-weight:600">Booking #${p.booking_id}</div>
+              <div style="font-size:.8rem;color:var(--text-muted)">
+                Txn: ${p.transaction_id} • ${formatDate(p.created_at)}
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:800;font-size:1.05rem;color:${color}">${sign}₹${p.amount.toLocaleString('en-IN')}</div>
+              <span class="badge ${STATUS_BADGE[p.status] || 'badge-muted'}">${p.status}</span>
+            </div>
+          </div>`;
+        }).join('');
+      } catch(err) { showToast(err.message,'error'); }
+    }
+
+    loadWallet();
+    loadTransactions();
+  </script>
+</body>
+</html>

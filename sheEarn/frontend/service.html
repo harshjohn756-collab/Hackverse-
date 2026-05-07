@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Detail – SheEarn</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .detail-layout { display: grid; grid-template-columns: 1fr 360px; gap: 32px; padding: 40px 24px; max-width: 1100px; margin: 0 auto; }
+    @media(max-width:900px){ .detail-layout { grid-template-columns: 1fr; } }
+    .service-img-hero {
+      width: 100%; height: 300px; border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, #1a0a2e, #2d0a4e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 6rem; margin-bottom: 24px; overflow: hidden;
+    }
+    .service-img-hero img { width:100%; height:100%; object-fit:cover; }
+    .provider-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+    .book-card { background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 24px; position: sticky; top: 90px; }
+    .book-price { font-size: 2rem; font-weight: 800; margin-bottom: 4px; }
+    .rating-item { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .rating-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <header class="navbar" id="navbar"></header>
+  <div class="page-content">
+    <div id="loading-state" class="flex-center" style="padding:80px">
+      <div class="loader"></div>
+    </div>
+    <div id="service-detail" class="hidden">
+      <div class="detail-layout">
+        <!-- Left: Details -->
+        <div>
+          <div class="service-img-hero" id="hero-img"></div>
+          <div style="margin-bottom:8px">
+            <span class="badge badge-primary" id="svc-category"></span>
+            <span id="svc-approved" class="badge badge-success ml" style="margin-left:8px">✓ Verified</span>
+          </div>
+          <h1 id="svc-title" style="margin-top:12px;margin-bottom:8px"></h1>
+          <div id="svc-rating" style="margin-bottom:16px;font-size:1rem"></div>
+          <p id="svc-description" style="line-height:1.8"></p>
+
+          <div class="divider"></div>
+
+          <!-- Provider Info -->
+          <div class="provider-card">
+            <h3 style="margin-bottom:16px">About the Provider</h3>
+            <div style="display:flex;align-items:center;gap:16px">
+              <div class="avatar avatar-lg" id="prov-avatar"></div>
+              <div>
+                <div style="font-weight:700;font-size:1.1rem" id="prov-name"></div>
+                <div style="color:var(--text-muted);font-size:.88rem" id="prov-location"></div>
+                <div style="margin-top:6px" id="prov-skills"></div>
+              </div>
+            </div>
+            <div class="mt" style="display:flex;gap:10px">
+              <button class="btn btn-secondary btn-sm" id="chat-btn" onclick="startChat()">💬 Chat</button>
+              <a id="prov-profile-link" class="btn btn-outline btn-sm">👤 View Profile</a>
+            </div>
+          </div>
+
+          <!-- Ratings -->
+          <h3 style="margin-bottom:16px">Customer Reviews</h3>
+          <div id="ratings-container"></div>
+
+          <!-- Rate form (logged in customers who have booked) -->
+          <div id="rate-section" class="card hidden" style="margin-top:24px">
+            <h3 class="mb">Rate This Service</h3>
+            <div id="star-picker" style="font-size:2rem;display:flex;gap:8px;margin-bottom:16px">
+              <!-- Stars rendered by JS -->
+            </div>
+            <div class="form-group">
+              <textarea class="form-textarea" id="rate-comment" placeholder="Share your experience (optional)…"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="submitRating()">Submit Review</button>
+          </div>
+        </div>
+
+        <!-- Right: Booking Card -->
+        <div>
+          <div class="book-card">
+            <div class="book-price" id="book-price"></div>
+            <p class="text-muted" style="font-size:.85rem;margin-bottom:20px">per session / piece</p>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">📅 Select Date & Time</label>
+              <input class="form-input" id="book-datetime" type="datetime-local" min="">
+            </div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>📍 Your Address</span>
+                <button class="btn btn-sm" style="padding:2px 6px;font-size:0.75rem" onclick="useGpsForBooking()">🌍 Use GPS</button>
+              </label>
+              <textarea class="form-textarea" id="book-address" placeholder="Full address for service" style="min-height:70px"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">📞 Contact Number</label>
+              <input class="form-input" id="book-contact" type="tel" placeholder="Your phone number">
+            </div>
+            <div class="form-group" style="margin-bottom:20px">
+              <label class="form-label">📝 Notes</label>
+              <textarea class="form-textarea" id="book-notes" placeholder="Any special requirements…" style="min-height:60px"></textarea>
+            </div>
+            <div id="book-alert" class="hidden" style="margin-bottom:14px"></div>
+            <button class="btn btn-primary btn-full btn-lg" id="book-btn" onclick="bookService()">Book Now</button>
+            <p class="text-center mt-sm" style="font-size:.78rem;color:var(--text-muted)">No payment until the job is done</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Success Modal -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal" style="text-align:center">
+      <div style="font-size:4rem;margin-bottom:16px">🎉</div>
+      <h2 style="margin-bottom:8px">Booking Confirmed!</h2>
+      <p style="margin-bottom:24px">Your booking request has been sent. The provider will accept shortly.</p>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <a href="bookings.html" class="btn btn-primary">View My Bookings</a>
+        <button class="btn btn-secondary" onclick="closeModal('booking-modal')">Continue Browsing</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!Auth.requireAuth()) throw '';
+    buildNavbar('browse');
+    const id = new URLSearchParams(location.search).get('id');
+    if (!id) window.location.href = 'browse.html';
+
+    let selectedStars = 0;
+    let serviceData = null;
+
+    // Set min datetime
+    const now = new Date(); now.setHours(now.getHours() + 2);
+    document.getElementById('book-datetime').min = now.toISOString().slice(0,16);
+
+    async function loadService() {
+      try {
+        const res = await api.getService(id);
+        serviceData = res.data;
+        renderService(serviceData);
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('service-detail').classList.remove('hidden');
+      } catch (err) {
+        document.getElementById('loading-state').innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><h3>${err.message}</h3><a href="browse.html" class="btn btn-primary mt">Back to Browse</a></div>`;
+      }
+    }
+
+    function renderService(s) {
+      document.title = `${s.title} – SheEarn`;
+      const emoji = CATEGORY_EMOJI[s.category] || '✨';
+
+      // Hero image
+      const heroEl = document.getElementById('hero-img');
+      if (s.images && s.images.length) {
+        heroEl.innerHTML = `<img src="${s.images[0]}" alt="${s.title}">`;
+      } else {
+        heroEl.textContent = emoji;
+      }
+
+      document.getElementById('svc-category').textContent = CATEGORY_LABEL[s.category] || s.category;
+      document.getElementById('svc-title').textContent = s.title;
+      document.getElementById('svc-rating').innerHTML = `<span class="stars">${renderStars(s.avg_rating, s.rating_count)}</span>`;
+      document.getElementById('svc-description').textContent = s.description || 'No description provided.';
+      document.getElementById('book-price').innerHTML = `<span class="gradient-text">₹${s.price}</span>`;
+
+      // Provider
+      const prov = s.provider;
+      if (prov) {
+        document.getElementById('prov-avatar').textContent = (prov.name||'P').slice(0,2).toUpperCase();
+        document.getElementById('prov-name').textContent = prov.name;
+        const loc = prov.profile?.location || 'Location not set';
+        document.getElementById('prov-location').textContent = `📍 ${loc}`;
+        const skills = prov.profile?.skills || [];
+        document.getElementById('prov-skills').innerHTML = skills.map(sk => `<span class="badge badge-primary" style="margin-right:4px">${sk}</span>`).join('');
+        document.getElementById('prov-profile-link').href = `profile.html?id=${prov.id}`;
+        document.getElementById('chat-btn').dataset.provId = prov.id;
+      }
+
+      // Ratings
+      const ratingsEl = document.getElementById('ratings-container');
+      const ratings = s.ratings || [];
+      if (!ratings.length) {
+        ratingsEl.innerHTML = '<p class="text-muted" style="font-size:.88rem">No reviews yet. Be the first!</p>';
+      } else {
+        ratingsEl.innerHTML = ratings.map(r => `
+          <div class="rating-item">
+            <div class="avatar">${(r.reviewer?.name || '?').slice(0,2).toUpperCase()}</div>
+            <div>
+              <div style="font-weight:600">${r.reviewer?.name || 'User'}</div>
+              <div class="stars" style="font-size:.9rem">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+              <p style="font-size:.88rem;margin-top:4px">${r.comment || ''}</p>
+              <span class="text-muted" style="font-size:.75rem">${timeAgo(r.created_at)}</span>
+            </div>
+          </div>`).join('');
+      }
+
+      // Show rate section if logged in + customer
+      const user = Auth.getUser();
+      if (user && user.role === 'customer') {
+        document.getElementById('rate-section').classList.remove('hidden');
+        renderInteractiveStars('star-picker', v => selectedStars = v);
+      }
+
+      // Hide booking card if user is the provider
+      if (user && prov && user.id === prov.id) {
+        const bookCard = document.querySelector('.book-card');
+        if (bookCard) {
+            bookCard.innerHTML = '<div class="alert alert-info" style="text-align: center;"><strong>Your Service</strong><br>This is your own service so you cannot book it.</div>';
+        }
+      }
+    }
+
+    async function bookService() {
+      if (!Auth.requireAuth()) return;
+      const user = Auth.getUser();
+
+      const dt = document.getElementById('book-datetime').value;
+      const address = document.getElementById('book-address').value.trim();
+      const contact_number = document.getElementById('book-contact').value.trim();
+      const notes = document.getElementById('book-notes').value.trim();
+      const alertEl = document.getElementById('book-alert');
+
+      if (!dt || !address || !contact_number || !notes) { 
+        alertEl.innerHTML = '<div class="alert alert-error">Please fill in all booking details to proceed</div>'; 
+        alertEl.classList.remove('hidden'); 
+        return; 
+      }
+
+      alertEl.classList.add('hidden');
+      const btn = document.getElementById('book-btn');
+      btn.disabled = true; btn.textContent = 'Booking…';
+
+      try {
+        await api.createBooking({ service_id: parseInt(id), scheduled_at: new Date(dt).toISOString(), address, contact_number, notes });
+        openModal('booking-modal');
+      } catch (err) {
+        alertEl.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+        alertEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Book Now';
+      }
+    }
+
+    async function useGpsForBooking() {
+      const addrEl = document.getElementById('book-address');
+      addrEl.value = 'Locating...';
+      if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by your browser', 'error');
+        addrEl.value = '';
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(async pos => {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+          const data = await res.json();
+          addrEl.value = data.display_name || `${pos.coords.latitude}, ${pos.coords.longitude}`;
+        } catch(err) {
+          showToast('Failed to fetch address. Please enter manually.', 'error');
+          addrEl.value = '';
+        }
+      }, err => {
+        showToast('Please enable location access', 'error');
+        addrEl.value = '';
+      });
+    }
+
+    async function submitRating() {
+      if (!selectedStars) { showToast('Please select a star rating', 'error'); return; }
+      try {
+        await api.submitRating({ service_id: parseInt(id), stars: selectedStars, comment: document.getElementById('rate-comment').value.trim() });
+        showToast('Review submitted!', 'success');
+        loadService();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    function startChat() {
+      const provId = document.getElementById('chat-btn').dataset.provId;
+      if (!Auth.requireAuth()) return;
+      window.location.href = `chat.html?uid=${provId}`;
+    }
+
+    closeModalOnOverlay('booking-modal');
+    loadService();
+  </script>
+</body>
+</html>

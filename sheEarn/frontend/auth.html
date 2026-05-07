@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login / Register – SheEarn</title>
+  <meta name="description" content="Sign in or create your SheEarn account to start earning or booking services.">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+  <div class="auth-layout">
+    <!-- Left hero panel -->
+    <div class="auth-hero">
+      <div style="position:relative;z-index:1;max-width:420px">
+        <div class="nav-logo" style="font-size:2rem;margin-bottom:32px">
+          She<span>Earn</span>
+        </div>
+        <h2 style="margin-bottom:16px">Your skills are your <span class="gradient-text">superpower</span></h2>
+        <p style="margin-bottom:32px">Join a community of 5,000+ women turning their skills into steady income.</p>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div
+              style="width:44px;height:44px;border-radius:50%;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">
+              📍</div>
+            <div><strong>Location-based</strong><br><small class="text-muted">Customers find you nearby</small></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div
+              style="width:44px;height:44px;border-radius:50%;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">
+              💸</div>
+            <div><strong>Instant Payments</strong><br><small class="text-muted">UPI-powered secure wallet</small></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div
+              style="width:44px;height:44px;border-radius:50%;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">
+              🏛️</div>
+            <div><strong>Gov Schemes</strong><br><small class="text-muted">Access funding and support</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="auth-form-wrap">
+      <div class="auth-box">
+        <h2 id="auth-title">Welcome Back</h2>
+        <p class="auth-sub text-muted" id="auth-sub">Sign in to your SheEarn account</p>
+
+        <!-- Tab toggle -->
+        <div class="auth-toggle" id="auth-tabs">
+          <button id="tab-login" class="active" onclick="switchTab('login')">Login</button>
+          <button id="tab-register" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <!-- Alert -->
+        <div id="auth-alert" class="hidden" style="margin-bottom:16px"></div>
+
+        <!-- KYC Pending Panel (shown after provider registration) -->
+        <div id="kyc-pending-panel" class="hidden">
+          <div style="text-align:center;padding:32px 16px">
+            <div style="font-size:3.5rem;margin-bottom:16px">🔍</div>
+            <h3 style="margin-bottom:10px;color:var(--primary)">KYC Verification In Progress</h3>
+            <p style="color:var(--text-muted);margin-bottom:24px;line-height:1.6">
+              Your ID document has been sent to <strong>Didit.me</strong> for verification.
+              We are confirming your identity — this usually takes just a few minutes.
+            </p>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px">
+              <div id="kyc-spinner"
+                style="width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite">
+              </div>
+              <span id="kyc-status-text" style="color:var(--text-muted);font-size:.9rem">Waiting for Didit.me
+                response…</span>
+            </div>
+            <div id="kyc-approved-msg" class="hidden">
+              <div
+                style="background:rgba(34,197,94,0.1);border:1px solid var(--success);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px">
+                <div style="font-size:2rem">✅</div>
+                <strong style="color:var(--success)">Identity Verified!</strong>
+                <p style="color:var(--text-muted);margin:6px 0 0">You have been confirmed as a female provider. Logging
+                  you in…</p>
+              </div>
+            </div>
+            <div id="kyc-declined-msg" class="hidden">
+              <div
+                style="background:rgba(239,68,68,0.1);border:1px solid var(--danger,#ef4444);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px">
+                <div style="font-size:2rem">❌</div>
+                <strong style="color:#ef4444">Verification Failed</strong>
+                <p style="color:var(--text-muted);margin:6px 0 0">Your document could not confirm female identity.
+                  Provider access denied.</p>
+              </div>
+            </div>
+            <button class="btn btn-outline" onclick="showKycPanel(false)" style="margin-top:8px">← Back to
+              Login</button>
+          </div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="form-group">
+              <label class="form-label">Email, Phone, or Username</label>
+              <input class="form-input" id="login-identifier" type="text" placeholder="you@example.com, 9876543210, or @username" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <div class="input-group">
+                <input class="form-input" id="login-password" type="password" placeholder="Your password" required>
+                <span class="input-icon" onclick="togglePw('login-password')">👁</span>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">Sign In</button>
+            <div style="text-align: center; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+              <a href="#" onclick="toggleForgotPassword(true); return false;"
+                style="font-size: 0.9rem; color: var(--primary); text-decoration: none; font-weight: 600;">Forgot
+                Password?</a>
+              <a href="#" onclick="toggleOtpLogin(true); return false;"
+                style="font-size: 0.85rem; color: var(--text-muted); text-decoration: none;">Login with OTP instead</a>
+            </div>
+          </div>
+        </form>
+
+        <!-- Forgot Password Form (Step 1: Get Identifier) -->
+        <form id="forgot-pw-form" class="hidden" onsubmit="handleForgotPassword(event)">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin-bottom:0">Reset Password</h3>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0">Enter your email or phone number to
+              retrieve your security question.</p>
+            <div class="form-group">
+              <label class="form-label">Email or Phone</label>
+              <input class="form-input" id="forgot-identifier" type="text" placeholder="email@example.com or 9876543210"
+                required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="forgot-pw-btn">Continue</button>
+            <div style="text-align: center; margin-top: 8px;">
+              <a href="#" onclick="toggleForgotPassword(false); return false;"
+                style="font-size: 0.9rem; color: var(--text-muted); text-decoration: none;">Back to Login</a>
+            </div>
+          </div>
+        </form>
+
+        <!-- Reset Password Form (Step 2: Answer Question & Reset) -->
+        <form id="reset-pw-form" class="hidden" onsubmit="handleResetPassword(event)">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <h3 style="margin-bottom:0">Security Question</h3>
+            <p id="reset-question-display"
+              style="font-weight:600; color:var(--primary); font-size:1.1rem; margin-top:0; padding:12px; background:rgba(168,85,247,0.1); border-radius:var(--radius-sm); border:1px solid rgba(168,85,247,0.2);">
+            </p>
+
+            <div class="form-group">
+              <label class="form-label">Your Answer</label>
+              <input class="form-input" id="reset-answer" type="text" placeholder="Enter your answer" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <div class="input-group">
+                <input class="form-input" id="reset-new-password" type="password" placeholder="Min 6 characters"
+                  required>
+                <span class="input-icon" onclick="togglePw('reset-new-password')">👁</span>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="reset-pw-btn">Reset Password 🚀</button>
+            <div style="text-align: center; margin-top: 8px;">
+              <a href="#" onclick="toggleForgotPassword(false); return false;"
+                style="font-size: 0.9rem; color: var(--text-muted); text-decoration: none;">Cancel</a>
+            </div>
+          </div>
+        </form>
+
+        <!-- OTP Login Form -->
+        <form id="otp-login-form" class="hidden" onsubmit="handleOtpLogin(event)">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input class="form-input" id="otp-phone" type="tel" placeholder="9876543210" required>
+            </div>
+            <div class="form-group hidden" id="otp-code-group">
+              <label class="form-label">Enter OTP</label>
+              <input class="form-input" id="otp-code" type="text" placeholder="123456">
+            </div>
+            <button type="button" class="btn btn-primary btn-full btn-lg" id="req-otp-btn"
+              onclick="requestOtp()">Request OTP</button>
+            <button type="submit" class="btn btn-primary btn-full btn-lg hidden" id="login-otp-btn">Sign in with
+              OTP</button>
+            <div style="text-align: center; margin-top: 8px;">
+              <a href="#" onclick="toggleOtpLogin(false); return false;"
+                style="font-size: 0.9rem; color: var(--text-muted); text-decoration: none;">Back to Password Login</a>
+            </div>
+          </div>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input class="form-input" id="reg-name" type="text" placeholder="Kavitha Reddy" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input class="form-input" id="reg-username" type="text" placeholder="kavitha123" required>
+              <small class="text-muted" style="font-size:0.75rem; margin-top:4px;">This will be your unique identifier.</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label">I am a…</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <label class="role-card" id="role-customer" onclick="selectRole('customer')"
+                  style="cursor:pointer;border:2px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;transition:var(--transition)">
+                  <div style="font-size:1.8rem">🛒</div>
+                  <div style="font-weight:700;font-size:.9rem">Customer</div>
+                  <small class="text-muted">Book services</small>
+                </label>
+                <label class="role-card" id="role-provider" onclick="selectRole('provider')"
+                  style="cursor:pointer;border:2px solid var(--primary);border-radius:var(--radius-sm);padding:14px;text-align:center;background:rgba(168,85,247,0.08);transition:var(--transition)">
+                  <div style="font-size:1.8rem">🚀</div>
+                  <div style="font-weight:700;font-size:.9rem">Provider</div>
+                  <small style="color:var(--primary)">Offer services</small>
+                </label>
+              </div>
+              <input type="hidden" id="reg-role" value="provider">
+            </div>
+            <!-- Gender dropdown: shown only for Customers. Providers get gender from document OCR -->
+            <div class="form-group" id="gender-group">
+              <label class="form-label">Gender</label>
+              <select class="form-select" id="reg-gender">
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <input type="hidden" id="reg-gender-hidden" value="female">
+
+            <div class="form-group" id="doc-upload-group" style="display: block;">
+              <label class="form-label">ID Document (Required for Providers)</label>
+              <p class="text-muted" style="font-size:.82rem;margin-bottom:8px">Your gender will be automatically
+                verified from this document. Only women may register as providers.</p>
+              <div class="file-drop-area" id="doc-drop-area"
+                style="border: 2px dashed var(--border-strong); padding: 20px; text-align: center; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.3s;"
+                onclick="document.getElementById('reg-document').click()">
+                <div style="font-size: 2rem;">📄</div>
+                <p>Drag & drop or click to upload</p>
+                <small class="text-muted">Aadhaar, PAN, Passport, Voter ID (Max 5MB)</small>
+                <input type="file" id="reg-document" name="document" accept=".jpg,.jpeg,.png,.webp,.pdf" class="hidden"
+                  onchange="updateFileUI(this)" oninput="updateFileUI(this)">
+                <div id="doc-name" style="margin-top: 8px; font-weight: 700; color: var(--success);"></div>
+              </div>
+              <p class="text-muted" style="font-size: .8rem; margin-top: 8px;">Note: Your document goes directly to
+                Didit.me for verification. SheEarn never stores it.</p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input class="form-input" id="reg-phone" type="tel" placeholder="9876543210">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email (optional)</label>
+              <input class="form-input" id="reg-email" type="email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <div class="input-group">
+                <input class="form-input" id="reg-password" type="password" placeholder="Min 6 characters" required>
+                <span class="input-icon" onclick="togglePw('reg-password')">👁</span>
+              </div>
+            </div>
+
+            <div style="border-top: 1px dashed var(--border); margin: 8px 0;"></div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: -4px;"><strong>Account
+                Recovery</strong></p>
+            <div class="form-group">
+              <label class="form-label">Security Question</label>
+              <select class="form-select" id="reg-security-question" required>
+                <option value="" disabled selected>Select a question...</option>
+                <option value="Which school did you study in?">Which school did you study in?</option>
+                <option value="What is your best school friend's name?">What is your best school friend's name?</option>
+                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+                <option value="In what city were you born?">In what city were you born?</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Security Answer</label>
+              <input class="form-input" id="reg-security-answer" type="text" placeholder="Your secret answer" required>
+              <small class="text-muted" style="font-size:0.75rem; margin-top:4px;">You will need this answer if you ever
+                forget your password.</small>
+            </div>
+            <div style="border-top: 1px dashed var(--border); margin: 8px 0;"></div>
+            <div class="form-group">
+              <label class="form-label">Preferred Language</label>
+              <select class="form-select" id="reg-language">
+                <option value="en">English</option>
+                <option value="kn">Kannada</option>
+                <option value="hi">Hindi</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="register-btn">Create Account 🚀</button>
+          </div>
+        </form>
+
+        <p class="text-center mt" style="font-size:.85rem;color:var(--text-muted)">
+          By continuing you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // If already logged in, redirect
+    if (Auth.isLoggedIn()) window.location.href = 'browse.html';
+
+    // Check URL params
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    const roleParam = params.get('role');
+
+    if (tabParam === 'register') switchTab('register');
+    // Apply role on load (default is provider) — hides gender dropdown
+    selectRole(roleParam === 'customer' ? 'customer' : 'provider');
+
+    function updateFileUI(input) {
+      const f = input ? input.files[0] : null;
+      const box = document.getElementById('doc-drop-area');
+      const lbl = document.getElementById('doc-name');
+      if (!box || !lbl) return;
+      if (f) {
+        lbl.innerHTML = '✅ Attached: ' + f.name;
+        box.style.borderColor = 'var(--success)';
+        box.style.background = 'rgba(34, 197, 94, 0.05)';
+      } else {
+        lbl.innerHTML = '';
+        box.style.borderColor = 'var(--border-strong)';
+        box.style.background = 'transparent';
+      }
+    }
+
+    // Polling mechanism to catch robotic testing tools that bypass native browser events
+    setInterval(() => {
+      const docInput = document.getElementById('reg-document');
+      if (docInput && docInput.files.length > 0 && !document.getElementById('doc-name').innerHTML.includes('Attached')) {
+        updateFileUI(docInput);
+      }
+    }, 500);
+
+    function switchTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('login-form').classList.toggle('hidden', !isLogin);
+      document.getElementById('register-form').classList.toggle('hidden', isLogin);
+      document.getElementById('otp-login-form').classList.add('hidden');
+      document.getElementById('forgot-pw-form').classList.add('hidden');
+      document.getElementById('reset-pw-form').classList.add('hidden');
+
+      document.getElementById('tab-login').classList.toggle('active', isLogin);
+      document.getElementById('tab-register').classList.toggle('active', !isLogin);
+      document.getElementById('auth-title').textContent = isLogin ? 'Welcome Back' : 'Create Account';
+      document.getElementById('auth-sub').textContent = isLogin ? 'Sign in to your SheEarn account' : 'Join thousands of women entrepreneurs';
+      clearAlert();
+    }
+
+    function toggleForgotPassword(show) {
+      document.getElementById('login-form').classList.toggle('hidden', show);
+      document.getElementById('forgot-pw-form').classList.toggle('hidden', !show);
+      document.getElementById('reset-pw-form').classList.add('hidden');
+      document.getElementById('otp-login-form').classList.add('hidden');
+
+      if (show) {
+        document.getElementById('auth-title').textContent = 'Password Recovery';
+        document.getElementById('auth-sub').textContent = 'Answer your security question to reset password';
+      } else {
+        switchTab('login');
+      }
+    }
+
+    function selectRole(role) {
+      document.getElementById('reg-role').value = role;
+      const c = document.getElementById('role-customer'), p = document.getElementById('role-provider');
+      const isProvider = role === 'provider';
+      if (role === 'customer') {
+        c.style.borderColor = 'var(--primary)'; c.style.background = 'rgba(168,85,247,0.08)';
+        p.style.borderColor = 'var(--border)'; p.style.background = 'transparent';
+        c.querySelector('small').style.color = 'var(--primary)'; p.querySelector('small').style.color = '';
+        document.getElementById('doc-upload-group').style.display = 'none';
+      } else {
+        p.style.borderColor = 'var(--primary)'; p.style.background = 'rgba(168,85,247,0.08)';
+        c.style.borderColor = 'var(--border)'; c.style.background = 'transparent';
+        p.querySelector('small').style.color = 'var(--primary)'; c.querySelector('small').style.color = '';
+        document.getElementById('doc-upload-group').style.display = 'block';
+      }
+      // Hide gender dropdown for providers — gender is extracted from document
+      document.getElementById('gender-group').style.display = isProvider ? 'none' : 'block';
+    }
+
+    function showAlert(msg, type = 'error') {
+      const el = document.getElementById('auth-alert');
+      el.innerHTML = `<div class="alert alert-${type}"><span>${type === 'error' ? '❌' : '✅'}</span>${msg}</div>`;
+      el.classList.remove('hidden');
+    }
+    function clearAlert() { document.getElementById('auth-alert').classList.add('hidden'); }
+
+    function togglePw(id) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function toggleOtpLogin(showOtp) {
+      document.getElementById('login-form').classList.toggle('hidden', showOtp);
+      document.getElementById('otp-login-form').classList.toggle('hidden', !showOtp);
+      clearAlert();
+    }
+
+    async function requestOtp() {
+      clearAlert();
+      const phone = document.getElementById('otp-phone').value.trim();
+      if (!phone) { showAlert('Phone number is required'); return; }
+
+      const btn = document.getElementById('req-otp-btn');
+      btn.disabled = true; btn.textContent = 'Requesting...';
+      try {
+        const res = await api.requestOtp(phone);
+        showToast(res.message, 'success');
+        document.getElementById('otp-code-group').classList.remove('hidden');
+        document.getElementById('login-otp-btn').classList.remove('hidden');
+        btn.classList.add('hidden'); // Hide request button
+      } catch (err) {
+        showAlert(err.message);
+        btn.disabled = false; btn.textContent = 'Request OTP';
+      }
+    }
+
+    async function handleOtpLogin(e) {
+      e.preventDefault(); clearAlert();
+      const btn = document.getElementById('login-otp-btn');
+      btn.disabled = true; btn.textContent = 'Verifying...';
+      try {
+        const phone = document.getElementById('otp-phone').value.trim();
+        const otp = document.getElementById('otp-code').value.trim();
+        const res = await api.loginOtp({ phone, otp });
+
+        Auth.setTokens(res.data.access_token, res.data.refresh_token);
+        Auth.setUser(res.data.user);
+        showToast('Welcome back!', 'success');
+        setTimeout(() => {
+          window.location.href = res.data.user.role === 'admin' ? 'admin.html' : 'browse.html';
+        }, 500);
+      } catch (err) {
+        showAlert(err.message);
+        btn.disabled = false; btn.textContent = 'Sign in with OTP';
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault(); clearAlert();
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true; btn.textContent = 'Signing in…';
+      try {
+        const identifier = document.getElementById('login-identifier').value.trim();
+        const isPhone = /^\d{10,}$/.test(identifier);
+        const res = await api.login({
+          ...(isPhone ? { phone: identifier } : { email: identifier }),
+          password: document.getElementById('login-password').value,
+        });
+        Auth.setTokens(res.data.access_token, res.data.refresh_token);
+        Auth.setUser(res.data.user);
+        showToast('Welcome back!', 'success');
+        setTimeout(() => {
+          const user = res.data.user;
+          window.location.href = user.role === 'admin' ? 'admin.html' : 'browse.html';
+        }, 500);
+      } catch (err) {
+        showAlert(err.message);
+        btn.disabled = false; btn.textContent = 'Sign In';
+      }
+    }
+
+    // ── KYC Pending state ────────────────────────────────────────────────
+    let _kycPollIdentifier = null;  // email or phone used to poll
+    let _kycPollTimer = null;
+    let _kycPollPassword = null;
+
+    function showKycPanel(show) {
+      document.getElementById('kyc-pending-panel').classList.toggle('hidden', !show);
+      document.getElementById('auth-tabs').classList.toggle('hidden', show);
+      document.getElementById('auth-title').textContent = show ? 'Identity Verification' : 'Welcome Back';
+      document.getElementById('auth-sub').textContent = show ? 'Didit.me is reviewing your document' : 'Sign in to your SheEarn account';
+      ['login-form', 'otp-login-form', 'register-form'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      if (!show) {
+        clearKycPoll();
+        switchTab('login');
+        document.getElementById('kyc-approved-msg').classList.add('hidden');
+        document.getElementById('kyc-declined-msg').classList.add('hidden');
+        document.getElementById('kyc-status-text').textContent = 'Waiting for Didit.me response…';
+        document.getElementById('kyc-spinner').style.display = '';
+      }
+    }
+
+    function clearKycPoll() {
+      if (_kycPollTimer) { clearInterval(_kycPollTimer); _kycPollTimer = null; }
+    }
+
+    let _kycPollRetries = 0;
+    const _KYC_MAX_RETRIES = 60; // 5 minutes max (60 × 5s)
+
+    async function pollKycStatus() {
+      if (!_kycPollIdentifier) return;
+      _kycPollRetries++;
+
+      // Stop after too many retries
+      if (_kycPollRetries > _KYC_MAX_RETRIES) {
+        clearKycPoll();
+        document.getElementById('kyc-spinner').style.display = 'none';
+        document.getElementById('kyc-status-text').textContent =
+          'Verification timed out. Please try again later.';
+        return;
+      }
+
+      try {
+        const qs = _kycPollIdentifier.includes('@')
+          ? `email=${encodeURIComponent(_kycPollIdentifier)}`
+          : `phone=${encodeURIComponent(_kycPollIdentifier)}`;
+        const res = await fetch(`/api/auth/kyc-status?${qs}`);
+
+        // Stop polling if user not found
+        if (res.status === 404) {
+          clearKycPoll();
+          document.getElementById('kyc-spinner').style.display = 'none';
+          document.getElementById('kyc-status-text').textContent =
+            'User not found. Please register again.';
+          showAlert('Registration record not found. Please try registering again.');
+          return;
+        }
+
+        const json = await res.json();
+        const d = json.data || {};
+
+        if (d.kyc_status === 'approved' && d.gender === 'female') {
+          clearKycPoll();
+          document.getElementById('kyc-spinner').style.display = 'none';
+          document.getElementById('kyc-status-text').textContent = 'Verification complete!';
+          document.getElementById('kyc-approved-msg').classList.remove('hidden');
+          setTimeout(async () => {
+            try {
+              const loginRes = await api.login(
+                _kycPollIdentifier.includes('@')
+                  ? { email: _kycPollIdentifier, password: _kycPollPassword }
+                  : { phone: _kycPollIdentifier, password: _kycPollPassword }
+              );
+              Auth.setTokens(loginRes.data.access_token, loginRes.data.refresh_token);
+              Auth.setUser(loginRes.data.user);
+              showToast('Identity verified! Welcome to SheEarn 🎉', 'success');
+              setTimeout(() => window.location.href = 'profile.html', 800);
+            } catch (e) {
+              showAlert('Auto-login failed: ' + e.message);
+              showKycPanel(false);
+            }
+          }, 1500);
+        } else if (d.kyc_status === 'declined') {
+          clearKycPoll();
+          document.getElementById('kyc-spinner').style.display = 'none';
+          document.getElementById('kyc-status-text').textContent = 'Verification failed.';
+          document.getElementById('kyc-declined-msg').classList.remove('hidden');
+        } else {
+          document.getElementById('kyc-status-text').textContent =
+            `Status: ${d.kyc_status || 'pending'} — checking again in 5s…`;
+        }
+      } catch (e) {
+        console.warn('KYC poll error:', e);
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault(); clearAlert();
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true; btn.textContent = 'Creating account…';
+      try {
+        const phone = document.getElementById('reg-phone').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const role = document.getElementById('reg-role').value;
+        const gender = document.getElementById('reg-gender').value; // only used for customers
+        const passw = document.getElementById('reg-password').value;
+        const security_question = document.getElementById('reg-security-question').value;
+        const security_answer = document.getElementById('reg-security-answer').value;
+
+        if (!security_question || !security_answer) {
+          showAlert('Security Question and Answer are required for account recovery.');
+          btn.disabled = false; btn.textContent = 'Create Account 🚀'; return;
+        }
+
+        if (!phone && !email) { showAlert('Phone or email is required'); btn.disabled = false; btn.textContent = 'Create Account 🚀'; return; }
+        const isProvider = role === 'provider';
+        const docFile = document.getElementById('reg-document').files[0];
+        if (isProvider && !docFile) {
+          showAlert('Please upload an ID document to verify your provider account.');
+          btn.disabled = false; btn.textContent = 'Create Account 🚀'; return;
+        }
+
+        let payload;
+        if (isProvider) {
+          // Provider: do NOT send gender — backend extracts it from document via OCR
+          payload = new FormData();
+          payload.append('name', document.getElementById('reg-name').value);
+          payload.append('username', document.getElementById('reg-username').value.trim());
+          if (phone) payload.append('phone', phone);
+          if (email) payload.append('email', email);
+          payload.append('password', passw);
+          payload.append('role', role);
+          payload.append('language', document.getElementById('reg-language').value);
+          payload.append('security_question', security_question);
+          payload.append('security_answer', security_answer);
+          payload.append('document', docFile);
+        } else {
+          payload = {
+            name: document.getElementById('reg-name').value,
+            username: document.getElementById('reg-username').value.trim(),
+            phone: phone || undefined,
+            email: email || undefined,
+            password: passw,
+            role, gender,
+            language: document.getElementById('reg-language').value,
+            security_question,
+            security_answer
+          };
+        }
+
+        const res = await api.register(payload);
+
+        // ── Provider: KYC pending path ────────────────────────────────────
+        if (res.data && res.data.kyc_pending) {
+          _kycPollIdentifier = email || phone;
+          _kycPollPassword = passw;
+          showKycPanel(true);
+          showToast('Document sent to Didit.me for verification!', 'success');
+          _kycPollTimer = setInterval(pollKycStatus, 5000);
+          pollKycStatus(); // immediate first check
+          btn.disabled = false; btn.textContent = 'Create Account 🚀';
+          return;
+        }
+
+        // ── Customer: immediate login ─────────────────────────────────────
+        Auth.setTokens(res.data.access_token, res.data.refresh_token);
+        Auth.setUser(res.data.user);
+        showToast('Account created!', 'success');
+        setTimeout(() => window.location.href = 'browse.html', 600);
+      } catch (err) {
+        showAlert(err.message);
+        btn.disabled = false; btn.textContent = 'Create Account 🚀';
+      }
+    }
+    // Password Recovery Flows
+    async function handleForgotPassword(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('forgot-identifier').value.trim();
+      const btn = document.getElementById('forgot-pw-btn');
+      btn.disabled = true; btn.textContent = 'Checking...';
+
+      try {
+        const res = await api.forgotPassword(identifier);
+        showAlert(res.message || 'Security question retrieved!', 'success');
+
+        // Show Step 2
+        document.getElementById('forgot-pw-form').classList.add('hidden');
+        document.getElementById('reset-pw-form').classList.remove('hidden');
+        document.getElementById('reset-question-display').textContent = res.data.security_question;
+
+        // Store identifier for next step
+        document.getElementById('reset-pw-form').dataset.identifier = identifier;
+      } catch (err) {
+        showAlert(err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Continue';
+      }
+    }
+
+    async function handleResetPassword(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('reset-pw-form').dataset.identifier;
+      const security_answer = document.getElementById('reset-answer').value.trim();
+      const new_password = document.getElementById('reset-new-password').value;
+      const btn = document.getElementById('reset-pw-btn');
+      btn.disabled = true; btn.textContent = 'Resetting...';
+
+      try {
+        const res = await api.resetPassword({ identifier, security_answer, new_password });
+        showToast(res.message, 'success');
+
+        // Back to login after 2 seconds
+        setTimeout(() => {
+          toggleForgotPassword(false);
+          document.getElementById('login-identifier').value = identifier;
+        }, 2000);
+      } catch (err) {
+        showAlert(err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Reset Password 🚀';
+      }
+    }
+  </script>
+</body>
+
+</html>

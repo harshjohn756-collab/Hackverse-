@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat – SheEarn</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+  <header class="navbar" id="navbar"></header>
+  <div class="page-content">
+    <div class="chat-layout">
+      <!-- Conversations Sidebar -->
+      <div class="chat-sidebar" id="chat-sidebar">
+        <div class="chat-header">
+          <h3 style="margin-bottom:4px">Messages</h3>
+          <p class="text-muted" style="font-size:.82rem">Your conversations</p>
+          <input type="text" class="form-input mt-sm" id="user-search-input" placeholder="🔍 Search users..." oninput="debounceSearch()">
+        </div>
+        <div id="search-results" class="hidden" style="padding:10px; border-bottom: 1px solid var(--border);">
+          <div class="text-muted" style="font-size:0.8rem; margin-bottom: 8px;">Search Results</div>
+          <div id="search-list"></div>
+        </div>
+        <div id="conv-list">
+          <div class="flex-center" style="padding:40px">
+            <div class="loader"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Main -->
+      <div class="chat-main" id="chat-main">
+        <!-- Empty state -->
+        <div id="chat-empty" class="flex-center" style="flex:1;flex-direction:column;gap:16px;padding:40px">
+          <div style="font-size:4rem">💬</div>
+          <h3>Select a conversation</h3>
+          <p class="text-muted">Choose from your conversations or start a new chat via a service page.</p>
+        </div>
+
+        <!-- Active chat -->
+        <div id="active-chat" class="hidden" style="flex-direction:column;height:100%">
+          <div class="chat-topbar">
+            <div class="avatar" id="chat-partner-avatar"></div>
+            <div>
+              <div style="font-weight:700" id="chat-partner-name"></div>
+              <div style="font-size:.78rem;color:var(--success)">● Online</div>
+            </div>
+            <div style="margin-left:auto">
+              <a id="chat-view-profile" class="btn btn-secondary btn-sm">👤 Profile</a>
+            </div>
+          </div>
+
+          <div class="messages-area" id="messages-area">
+            <div class="flex-center" style="padding:40px">
+              <div class="loader"></div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <textarea class="form-input" id="msg-input" placeholder="Type a message…" rows="1" style="resize:none"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+              oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <button class="btn btn-primary btn-icon" onclick="sendMessage()" title="Send">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if (!Auth.requireAuth()) throw '';
+    buildNavbar('chat');
+
+    const selfUser = Auth.getUser();
+    let activeUid = null;
+    let pollInterval = null;
+
+    async function loadConversations() {
+      try {
+        const res = await api.conversations();
+        const convs = res.data;
+        const el = document.getElementById('conv-list');
+
+        if (!convs.length) {
+          el.innerHTML = `<div class="empty-state" style="padding:30px"><div class="empty-icon">💬</div><p>No conversations yet. Book a service and start chatting!</p></div>`;
+          return;
+        }
+
+        el.innerHTML = convs.map(c => `
+          <div class="conv-item ${activeUid === c.user.id ? 'active' : ''}" data-uid="${c.user.id}" data-name="${(c.user.name || '').replace(/"/g, '&quot;')}" data-image="${c.user.profile_image || ''}" onclick="openChat(${c.user.id}, this.dataset.name, this.dataset.image)">
+            <div class="avatar">${(c.user.name || '?').slice(0, 2).toUpperCase()}</div>
+            <div class="conv-info">
+              <div class="conv-name">${c.user.name}</div>
+              <div class="conv-preview">${c.last_message?.message || ''}</div>
+            </div>
+            <div class="conv-meta">
+              <span class="conv-time">${timeAgo(c.last_message?.created_at)}</span>
+              ${c.unread_count ? `<span class="unread-badge">${c.unread_count}</span>` : ''}
+            </div>
+          </div>`).join('');
+      } catch (err) {
+        document.getElementById('conv-list').innerHTML = `<p class="text-muted" style="padding:20px">${err.message}</p>`;
+      }
+    }
+
+    async function openChat(uid, name, image) {
+      activeUid = uid;
+      document.getElementById('chat-empty').classList.add('hidden');
+      document.getElementById('active-chat').classList.remove('hidden');
+      document.getElementById('active-chat').style.display = 'flex';
+
+      const av = document.getElementById('chat-partner-avatar');
+      if (image) { av.innerHTML = `<img src="${image}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; }
+      else { av.textContent = name.slice(0, 2).toUpperCase(); }
+      document.getElementById('chat-partner-name').textContent = name;
+      document.getElementById('chat-view-profile').href = `profile.html?id=${uid}`;
+
+      // Mark active conversation
+      document.querySelectorAll('.conv-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.uid === String(uid));
+      });
+
+      await loadMessages();
+
+      // Poll for new messages
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(loadMessages, 5000);
+    }
+
+    async function loadMessages() {
+      if (!activeUid) return;
+      try {
+        const res = await api.getMessages(activeUid);
+        const messages = res.data.messages;
+        const el = document.getElementById('messages-area');
+        const wasAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 100;
+
+        el.innerHTML = messages.length
+          ? messages.map(m => messageHtml(m)).join('')
+          : '<div class="text-center text-muted" style="padding:40px;font-size:.88rem">No messages yet. Say hello! 👋</div>';
+
+        if (wasAtBottom) el.scrollTop = el.scrollHeight;
+      } catch (err) { /* silent refresh fail */ }
+    }
+
+    function messageHtml(m) {
+      const isMine = m.sender_id === selfUser.id;
+      return `
+        <div class="message ${isMine ? 'own' : ''}" id="msg-${m.id}">
+          ${!isMine ? `<div class="avatar" style="width:32px;height:32px;font-size:.7rem">${(m.sender?.name || '?').slice(0, 2).toUpperCase()}</div>` : ''}
+          <div>
+            <div class="message-bubble">${escHtml(m.message)}</div>
+            <div class="message-time">
+              ${timeAgo(m.created_at)}
+              ${isMine ? `<span style="cursor:pointer;margin-left:8px;color:var(--danger)" onclick="deleteMessage(${m.id})" title="Delete Message">🗑️</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    async function deleteMessage(id) {
+      if (!confirm('Delete this message?')) return;
+      try {
+        await api.deleteMessage(id);
+        const msgEl = document.getElementById(`msg-${id}`);
+        if (msgEl) msgEl.remove();
+        showToast('Message deleted', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    let searchTimer;
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(performSearch, 500);
+    }
+
+    async function performSearch() {
+      const q = document.getElementById('user-search-input').value.trim();
+      const sRes = document.getElementById('search-results');
+      const sList = document.getElementById('search-list');
+      const cList = document.getElementById('conv-list');
+      
+      if (!q) {
+        sRes.classList.add('hidden');
+        cList.style.display = 'block';
+        return;
+      }
+      
+      try {
+        const res = await api.searchUsers(q);
+        const users = res.data;
+        
+        cList.style.display = 'none';
+        sRes.classList.remove('hidden');
+        
+        if (!users.length) {
+          sList.innerHTML = '<div class="text-muted text-center" style="padding:10px;font-size:.85rem">No users found</div>';
+          return;
+        }
+        
+        sList.innerHTML = users.map(u => `
+          <div class="conv-item" style="padding:8px" onclick="openChat(${u.id}, '${escHtml(u.name)}', '${u.profile_image || ''}')">
+            <div class="avatar" style="width:32px;height:32px;font-size:.7rem">${(u.name || '?').slice(0, 2).toUpperCase()}</div>
+            <div class="conv-info">
+              <div class="conv-name" style="font-size:.9rem">${escHtml(u.name)} <span style="font-size:.75rem;color:var(--text-muted)">@${escHtml(u.username || 'user')}</span></div>
+              <div class="conv-preview" style="font-size:.75rem">${u.role}</div>
+            </div>
+          </div>`).join('');
+      } catch (err) {
+        sList.innerHTML = `<div class="text-danger" style="padding:10px;font-size:.85rem">${err.message}</div>`;
+      }
+    }
+
+    function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    async function sendMessage() {
+      const input = document.getElementById('msg-input');
+      const text = input.value.trim();
+      if (!text || !activeUid) return;
+      input.value = ''; input.style.height = 'auto';
+      try {
+        await api.sendMessage({ receiver_id: activeUid, message: text });
+        loadMessages();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    // Open from URL param
+    const uid = new URLSearchParams(location.search).get('uid');
+    const uname = new URLSearchParams(location.search).get('name') || 'User';
+
+    loadConversations().then(() => {
+      if (uid) openChat(parseInt(uid), uname, '');
+    });
+  </script>
+</body>
+
+</html>
