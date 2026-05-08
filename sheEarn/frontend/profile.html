@@ -56,6 +56,7 @@
           <div id="profile-badge" class="badge badge-primary" style="margin-bottom:8px"></div>
           <h1 id="profile-name" style="margin-bottom:4px"></h1>
           <p id="profile-location" class="text-muted" style="margin-bottom:4px"></p>
+          <p id="profile-upi-display" class="text-muted" style="margin-bottom:4px;display:none"></p>
 
           <div class="skills-wrap" id="skills-display"></div>
           <div class="mt private-only" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -125,6 +126,12 @@
           <label class="form-label">Skills (press Enter to add)</label>
           <input class="form-input" id="edit-skill-input" placeholder="e.g. Embroidery" onkeydown="if(event.key==='Enter'){event.preventDefault();addSkill()}">
           <div class="skills-wrap mt-sm" id="edit-skills-display"></div>
+        </div>
+
+        <div class="form-group" id="upi-field-wrap">
+          <label class="form-label">💳 UPI ID (for receiving payments)</label>
+          <input class="form-input" id="edit-upi" type="text" placeholder="e.g. yourname@paytm, yourname@ybl">
+          <small class="text-muted" style="margin-top:4px;display:block">Required for providers to receive direct UPI payments from customers</small>
         </div>
 
         <div class="form-group"><label class="form-label">Language</label>
@@ -235,6 +242,25 @@
         document.getElementById('edit-location').value = profile?.location || '';
         document.getElementById('edit-desc').value = profile?.description || '';
         document.getElementById('edit-lang').value = user.language || 'en';
+        document.getElementById('edit-upi').value = profile?.upi_id || '';
+
+        // Show/hide UPI field based on role (mainly for providers)
+        const upiWrap = document.getElementById('upi-field-wrap');
+        if (upiWrap) upiWrap.style.display = (user.role === 'provider' || profile?.upi_id) ? 'block' : 'none';
+
+        // Display current UPI on profile hero
+        const upiDisplay = document.getElementById('profile-upi-display');
+        if (upiDisplay) {
+          if (profile?.upi_id) {
+            upiDisplay.style.display = 'block';
+            upiDisplay.innerHTML = `💳 UPI: <strong>${profile.upi_id}</strong>`;
+          } else if (user.role === 'provider') {
+            upiDisplay.style.display = 'block';
+            upiDisplay.innerHTML = `<span style="color:var(--danger)">⚠️ UPI ID not set — you won't receive payments</span>`;
+          } else {
+            upiDisplay.style.display = 'none';
+          }
+        }
 
         editSkills = [...skills]; renderEditSkills();
 
@@ -310,12 +336,20 @@
         const lat = parseFloat(document.getElementById('edit-location').dataset.lat || 0);
         const lon = parseFloat(document.getElementById('edit-location').dataset.lon || 0);
         const newLang = document.getElementById('edit-lang').value;
+        const upiVal = document.getElementById('edit-upi').value.trim();
+
+        // Basic UPI ID format validation
+        if (upiVal && !upiVal.includes('@')) {
+          showToast('Invalid UPI ID format. It should be like name@upi or name@paytm', 'error');
+          return;
+        }
+
         await api.updateProfile({
           name: document.getElementById('edit-name').value,
           location: document.getElementById('edit-location').value,
           description: document.getElementById('edit-desc').value,
           language: newLang,
-
+          upi_id: upiVal || null,
           skills: editSkills,
           ...(lat && lon ? { latitude: lat, longitude: lon } : {}),
         });

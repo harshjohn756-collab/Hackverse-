@@ -55,7 +55,10 @@ def update_profile():
     if "description" in data:
         profile.description = data["description"]
     if "upi_id" in data:
-        profile.upi_id = data["upi_id"].strip() if data["upi_id"] else None
+        upi_val = data["upi_id"].strip() if data["upi_id"] else None
+        if upi_val and "@" not in upi_val:
+            return error("Invalid UPI ID format. Must be like name@paytm or name@ybl")
+        profile.upi_id = upi_val
 
     db.session.commit()
 
