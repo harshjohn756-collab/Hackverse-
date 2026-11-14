@@ -8,6 +8,7 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_migrate import Migrate
+from sqlalchemy import inspect, text
 
 from config import config
 
@@ -16,6 +17,21 @@ db = SQLAlchemy()
 jwt = JWTManager()
 socketio = SocketIO(async_mode='gevent')
 migrate = Migrate()
+
+
+def _migrate_missing_username_column(app):
+    """Add username to pre-existing user tables without deleting data."""
+    with app.app_context():
+        inspector = inspect(db.engine)
+        if "users" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("users")}
+        with db.engine.begin() as connection:
+            if "username" not in columns:
+                connection.execute(text("ALTER TABLE users ADD COLUMN username VARCHAR(50)"))
+            connection.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username ON users (username)"
+            ))
 
 
 def create_app(config_name="default"):
@@ -69,6 +85,9 @@ def create_app(config_name="default"):
     app.register_blueprint(scheme_bp, url_prefix="/api/schemes")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(chat_bp, url_prefix="/api/chat")
+
+    # Safely update an older deployed database schema, preserving existing records.
+    _migrate_missing_username_column(app)
 
     # Register SocketIO events
     from app.routes import socket_events  # noqa: F401
